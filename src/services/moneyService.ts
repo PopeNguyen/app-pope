@@ -31,3 +31,9 @@ export const updateListBank = async (listBank: any) => {
   const { id, ...data } = listBank;
   await updateDoc(listBankRef, data);
 };
+
+export const deleteListBank = async (id: string) => {
+  if (!id) return;
+  const listBankRef = doc(db, "listBank", id);
+  await deleteDoc(listBankRef);
+};

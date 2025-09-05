@@ -10,6 +10,8 @@ import Casino from '@/pages/casino/Casino';
 import CasinoMatch from '@/pages/casino/CasinoMatch';
 
 import { withAuth } from '@/utils/withAuth';
+import AccountBank from '@/pages/money/AccountBank';
+import CategoryBank from '@/pages/money/CategoryBank';
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -35,6 +37,8 @@ const router = createBrowserRouter([
     children: [
       { path: 'todolist', element: withAuth(<TodoList />) },
       { path: 'money', element: withAuth(<Money />) },
+      { path: 'account', element: withAuth(<AccountBank />) },
+      { path: 'category-bank', element: withAuth(<CategoryBank />) },
       { path: 'casino', element: withAuth(<Casino />) },
       { path: 'casino/:id', element: withAuth(<CasinoMatch />) },
     ],

@@ -1,24 +1,24 @@
-import { db } from "@/firebase";
 import { useAuth } from "@/hooks/useAuth";
 import { addListBank, getListBank } from "@/services/moneyService";
-import { Button, Form, Input, message, Modal, Select } from "antd";
-import { collection } from "firebase/firestore";
+import { Button, Form, Input, message, Modal, Table } from "antd";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Money = () => {
-  const [input, setInput] = useState<any>("");
   const [isModalAddAccount, setIsModalAddAccount] = useState<boolean>(false);
+  const [listBank, setListBank] = useState<any>([]);
   const { user, loading, isAuthenticated } = useAuth();
   const [form] = Form.useForm();
+  const navigate = useNavigate();
   const [messageApi, contextHolder] = message.useMessage();
 
   const handleOk = () => {
-    form.validateFields().then(async(values) => {
+    form.validateFields().then(async (values) => {
       if (!user) return;
       var dataApi = {
         ...values,
-        uid: user.uid
-      }
+        uid: user.uid,
+      };
       try {
         await addListBank(dataApi);
         messageApi.success("Thêm tài khoản thành công!");
@@ -26,16 +26,16 @@ const Money = () => {
         messageApi.error("Thêm tài khoản thất bại!");
       }
     });
-  }
+  };
 
   const callApiGetListBank = async () => {
     if (!user) return;
     const list = await getListBank(user.uid);
-    console.log('list', list);
-  }
+    setListBank(list);
+  };
 
   useEffect(() => {
-    callApiGetListBank()
+    callApiGetListBank();
   }, [user]);
 
   if (loading)
@@ -48,11 +48,32 @@ const Money = () => {
   return (
     <div>
       {contextHolder}
-      <h2>Money Page</h2>
-      <Input value={input} onChange={(e) => setInput(e.target.value)} />
-      <Button onClick={()=>{setIsModalAddAccount(true)}}>Thêm tài khoản</Button>
+      <h2>Quản lý dòng tiền</h2>
+      <Button
+        onClick={() => {
+          setIsModalAddAccount(true);
+        }}
+      >
+        Thêm giao dịch
+      </Button>
+      <Button
+        className="!ml-2"
+        onClick={() => {
+          navigate(`/app-pope/account`);
+        }}
+      >
+        Quản lý tài khoản
+      </Button>
+      <Button
+        className="!ml-2"
+        onClick={() => {
+          navigate(`/app-pope/category-bank`);
+        }}
+      >
+        Quản lý danh mục
+      </Button>
       <Modal
-        title="Thêm tài khoản"
+        title="Thêm giao dịch"
         open={isModalAddAccount}
         onCancel={() => setIsModalAddAccount(false)}
         onOk={handleOk}
@@ -63,8 +84,8 @@ const Money = () => {
           layout="vertical"
           form={form}
           initialValues={{
-            nameBank: '',
-            amount: 0
+            nameBank: "",
+            amount: 0,
           }}
         >
           <Form.Item
@@ -82,7 +103,6 @@ const Money = () => {
           >
             <Input placeholder="Nhập số tiền..." />
           </Form.Item>
-
         </Form>
       </Modal>
     </div>
