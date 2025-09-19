@@ -18,7 +18,7 @@ import {
   Spin,
   Table,
 } from "antd";
-import { collection } from "firebase/firestore";
+import { collection, onSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";
 
 const AccountBank = () => {
@@ -43,7 +43,7 @@ const AccountBank = () => {
       dataIndex: "amount",
       key: "amount",
       render: (value: number) =>
-        value.toLocaleString("vi-VN", { style: "currency", currency: "VND" }),
+        value?.toLocaleString("vi-VN", { style: "currency", currency: "VND" }),
     },
     {
       title: "Hành động",
@@ -126,7 +126,7 @@ const AccountBank = () => {
       const list = await getListBank(user.uid);
       setListBank(list);
     } catch (error) {
-        messageApi.error("Không lấy được danh sách tài khoản");
+      messageApi.error("Không lấy được danh sách tài khoản");
     } finally {
       setSpinning(false);
     }
@@ -137,8 +137,37 @@ const AccountBank = () => {
   }, [dataForm]);
 
   useEffect(() => {
-    callApiGetListBank();
+    if (!user) return;
+
+    setSpinning(true);
+
+    // Tạo reference đến collection bank theo uid
+    const bankRef = collection(db, 'listBank');
+
+    // Lắng nghe realtime
+    const unsubscribe = onSnapshot(
+      bankRef,
+      (snapshot) => {
+        const list = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setListBank(list);
+        setSpinning(false);
+      },
+      (error) => {
+        messageApi.error("Không lấy được danh sách tài khoản");
+        setSpinning(false);
+      }
+    );
+
+    // Cleanup khi component unmount hoặc user thay đổi
+    return () => unsubscribe();
   }, [user]);
+
+  // useEffect(() => {
+  //   callApiGetListBank();
+  // }, [user]);
 
   if (loading)
     return <p className="text-center mt-4">Đang kiểm tra đăng nhập...</p>;
