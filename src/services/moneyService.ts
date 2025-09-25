@@ -10,6 +10,7 @@ import {
   where
 } from 'firebase/firestore';
 
+// list bank
 export const addListBank = async (data: any) => {
   const moneyRef = collection(db, 'listBank');
   return await addDoc(moneyRef, data);
@@ -36,4 +37,20 @@ export const deleteListBank = async (id: string) => {
   if (!id) return;
   const listBankRef = doc(db, "listBank", id);
   await deleteDoc(listBankRef);
+};
+
+// list transaction
+export const addListTransaction = async (data: any) => {
+  const moneyRef = collection(db, 'listTransaction');
+  return await addDoc(moneyRef, data);
+};
+
+export const getListTransaction = async (uid: string): Promise<any[]> => {
+  const moneyRef = collection(db, 'listTransaction');
+  const q = query(moneyRef, where('uid', '==', uid));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data()
+  })) as any[];
 };

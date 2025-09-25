@@ -20,8 +20,10 @@ import {
 } from "antd";
 import { collection, onSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const AccountBank = () => {
+  const navigate = useNavigate();
   const [isModalAddAccount, setIsModalAddAccount] = useState<boolean>(false);
   const [isModalListBank, setIsModalListBank] = useState<boolean>(false);
   const [spinning, setSpinning] = useState(false);
@@ -137,37 +139,8 @@ const AccountBank = () => {
   }, [dataForm]);
 
   useEffect(() => {
-    if (!user) return;
-
-    setSpinning(true);
-
-    // Tạo reference đến collection bank theo uid
-    const bankRef = collection(db, 'listBank');
-
-    // Lắng nghe realtime
-    const unsubscribe = onSnapshot(
-      bankRef,
-      (snapshot) => {
-        const list = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setListBank(list);
-        setSpinning(false);
-      },
-      (error) => {
-        messageApi.error("Không lấy được danh sách tài khoản");
-        setSpinning(false);
-      }
-    );
-
-    // Cleanup khi component unmount hoặc user thay đổi
-    return () => unsubscribe();
+    callApiGetListBank();
   }, [user]);
-
-  // useEffect(() => {
-  //   callApiGetListBank();
-  // }, [user]);
 
   if (loading)
     return <p className="text-center mt-4">Đang kiểm tra đăng nhập...</p>;
@@ -182,6 +155,12 @@ const AccountBank = () => {
       <Spin spinning={spinning} fullscreen />
       <h2>Quản lý tài khoản</h2>
       <Button
+        onClick={() => navigate(-1)}
+      >
+        Quay lại
+      </Button>
+      <Button
+        className="!ml-2"
         onClick={() => {
           setIsModalAddAccount(true);
         }}

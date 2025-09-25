@@ -1,18 +1,9 @@
-import {
-  Button,
-  Modal,
-  Input,
-  Dropdown,
-  message,
-} from "antd";
+import { Button, Modal, Input, Dropdown, message } from "antd";
 import { useEffect, useState } from "react";
-import {
-  doc,
-  getDoc,
-  setDoc,
-} from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/firebase";
 import { useParams } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Player {
   name: string;
@@ -33,6 +24,7 @@ interface MatchRow {
 
 export default function CasinoMatch() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
 
   const [listNamePlay, setListNamePlay] = useState<Player[]>([]);
   const [listDataMatch, setListDataMatch] = useState<PlayerScore[][]>([]);
@@ -42,16 +34,29 @@ export default function CasinoMatch() {
   const [dialogAddMatchVisible, setDialogAddMatchVisible] = useState(false);
   const [dataEditPlayer, setDataEditPlayer] = useState<Player[]>([]);
   const [dataOneMatch, setDataOneMatch] = useState<PlayerScore[]>([]);
+  const [dataUser, setDataUser] = useState<any>();
 
   const matchRef = doc(db, "matches", id!);
 
   useEffect(() => {
+    if (!id) return; // tránh chạy khi chưa có id
+
     const fetchData = async () => {
-      const docSnap = await getDoc(matchRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setListNamePlay(data.listNamePlay || []);
-        setListDataMatch(data.listDataMatch || []);
+      try {
+        const matchDocRef = doc(db, "matches", id); // "matches" là tên collection
+        const docSnap = await getDoc(matchDocRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setDataUser(data)
+          
+          setListNamePlay(data?.listNamePlay || []);
+          setListDataMatch(data?.listDataMatch || []);
+        } else {
+          console.log("No such document!");
+        }
+      } catch (error) {
+        console.error("Error fetching document:", error);
       }
     };
     fetchData();
@@ -61,9 +66,8 @@ export default function CasinoMatch() {
     newListNamePlay: Player[],
     newListDataMatch: PlayerScore[][]
   ) => {
-    console.log('firebase');
-    
     await setDoc(matchRef, {
+      ...dataUser,
       listNamePlay: newListNamePlay,
       listDataMatch: newListDataMatch,
     });
@@ -122,13 +126,10 @@ export default function CasinoMatch() {
       return;
     }
     const newList = [dataOneMatch, ...listDataMatch];
-    setListDataMatch(newList);
-    console.log('newList', newList);
-    console.log('listNamePlay', listNamePlay);
-    saveToFirebase(listNamePlay, newList);
-    console.log(2);
-    
-    setDialogAddMatchVisible(false);
+    console.log("newList", newList);
+    // setListDataMatch(newList);
+    // saveToFirebase(listNamePlay, newList);
+    // setDialogAddMatchVisible(false);
   };
 
   const deleteMatch = (matchIndex: number) => {

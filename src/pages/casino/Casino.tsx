@@ -8,7 +8,9 @@ import {
   getDocs,
   onSnapshot,
   query,
+  where,
 } from "firebase/firestore";
+import { useAuth } from "@/hooks/useAuth";
 
 const matchRef = collection(db, "matches");
 
@@ -18,18 +20,23 @@ export default function Casino() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [nameMatch, setNameMatch] = useState("");
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Lấy danh sách ván từ Firestore (realtime)
   useEffect(() => {
-    const q = query(matchRef);
+    if (!user?.uid) return; // tránh chạy khi uid chưa có
+
+    const q = query(matchRef, where("uid", "==", user?.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const result = snapshot.docs.map((doc) => doc.data().name);
+      const result = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
       setMatches(result);
-      console.log("result", result);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user?.uid]);
 
   const handleAddMatch = async () => {
     const name = nameMatch.trim();
@@ -39,7 +46,7 @@ export default function Casino() {
     }
 
     try {
-      await addDoc(matchRef, { name });
+      await addDoc(matchRef, { name, uid: user?.uid });
       setNameMatch("");
       setIsModalOpen(false);
       messageApi.success("Thêm ván thành công!");
@@ -64,14 +71,14 @@ export default function Casino() {
         className="mt-10"
         style={{ display: "flex", flexWrap: "wrap", gap: 8 }}
       >
-        {matches.map((item: any) => (
+        {matches?.map((item: any) => (
           <Button
-            key={item}
+            key={item?.id}
             type="default"
-            onClick={() => goTo(item)}
+            onClick={() => goTo(item?.id)}
             className="border border-gray-300 rounded-lg px-4 py-1 bg-white shadow-sm hover:border-blue-500 transition-all"
           >
-            {item}
+            {item?.name}
           </Button>
         ))}
       </div>

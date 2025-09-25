@@ -1,4 +1,3 @@
-import { db } from "@/firebase";
 import { useAuth } from "@/hooks/useAuth";
 import {
   addCategoryBank,
@@ -13,16 +12,16 @@ import {
   message,
   Modal,
   Popconfirm,
-  Select,
   Space,
   Spin,
   Table,
 } from "antd";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const CategoryBank = () => {
+  const navigate = useNavigate();
   const [isModalAddAccount, setIsModalAddAccount] = useState<boolean>(false);
-  const [isModalCategoryBank, setIsModalCategoryBank] = useState<boolean>(false);
   const [spinning, setSpinning] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [dataForm, setDataForm] = useState<any>("");
@@ -145,6 +144,12 @@ const CategoryBank = () => {
       <Spin spinning={spinning} fullscreen />
       <h2>Quản lý danh mục</h2>
       <Button
+        onClick={() => navigate(-1)}
+      >
+        Quay lại
+      </Button>
+      <Button
+        className="!ml-2"
         onClick={() => {
           setIsModalAddAccount(true);
         }}
@@ -154,7 +159,7 @@ const CategoryBank = () => {
       <Table
         columns={columns}
         dataSource={categoryBank}
-        rowKey={(record: any) => record?.id} // hoặc record.id nếu có id
+        rowKey={(record: any) => record?.id}
         pagination={false}
       />
       <Modal
