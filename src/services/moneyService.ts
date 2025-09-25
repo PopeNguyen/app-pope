@@ -54,3 +54,16 @@ export const getListTransaction = async (uid: string): Promise<any[]> => {
     ...doc.data()
   })) as any[];
 };
+
+export const updateListTransaction = async (transaction: any) => {
+  if (!transaction.id) return;
+  const transactionRef = doc(db, 'listTransaction', transaction.id);
+  const { id, ...data } = transaction;
+  await updateDoc(transactionRef, data);
+};
+
+export const deleteListTransaction = async (id: string) => {
+  if (!id) return;
+  const transactionRef = doc(db, "listTransaction", id);
+  await deleteDoc(transactionRef);
+};

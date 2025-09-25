@@ -1,4 +1,3 @@
-import { db } from "@/firebase";
 import { useAuth } from "@/hooks/useAuth";
 import {
   addListBank,
@@ -8,118 +7,32 @@ import {
 } from "@/services/moneyService";
 import {
   Button,
+  Card,
+  Col,
   Form,
   Input,
+  InputNumber,
+  List,
   message,
   Modal,
   Popconfirm,
-  Select,
-  Space,
+  Row,
   Spin,
-  Table,
 } from "antd";
-import { collection, onSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";
+import { PlusOutlined, EditOutlined, DeleteOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
 const AccountBank = () => {
   const navigate = useNavigate();
-  const [isModalAddAccount, setIsModalAddAccount] = useState<boolean>(false);
-  const [isModalListBank, setIsModalListBank] = useState<boolean>(false);
+  const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [spinning, setSpinning] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
-  const [dataForm, setDataForm] = useState<any>("");
-  const [listBank, setListBank] = useState<any>([]);
+  const [editingRecord, setEditingRecord] = useState<any>(null);
+  const [listBank, setListBank] = useState<any[]>([]);
   const { user, loading, isAuthenticated } = useAuth();
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
-
-  const columns = [
-    {
-      title: "Tên ngân hàng",
-      dataIndex: "nameBank",
-      key: "nameBank",
-    },
-    {
-      title: "Tiền",
-      dataIndex: "amount",
-      key: "amount",
-      render: (value: number) =>
-        value?.toLocaleString("vi-VN", { style: "currency", currency: "VND" }),
-    },
-    {
-      title: "Hành động",
-      key: "action",
-      render: (_: any, record: any) => (
-        <Space>
-          <Button onClick={() => onEdit(record)}>Sửa</Button>
-          <Popconfirm
-            title="Bạn có chắc chắn muốn xóa?"
-            onConfirm={() => {
-              onDelete(record);
-              message.success("Đã xóa thành công");
-            }}
-            okText="Có"
-            cancelText="Không"
-          >
-            <Button danger>Xóa</Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
-
-  const onEdit = (record: any) => {
-    setDataForm(record);
-    setIsEdit(true);
-    setIsModalAddAccount(true);
-  };
-
-  const onDelete = async (record: any) => {
-    setSpinning(true);
-    try {
-      await deleteListBank(record?.id);
-      messageApi.success("Xóa tài khoản thành công!");
-      callApiGetListBank();
-    } catch (error) {
-      messageApi.error("Xóa tài khoản thất bại!");
-    } finally {
-      setSpinning(false);
-    }
-  };
-
-  const cancelForm = () => {
-    setIsModalAddAccount(false);
-    form.resetFields();
-  };
-
-  const handleOk = () => {
-    form.validateFields().then(async (values) => {
-      if (!user) return;
-      var dataApi = {
-        ...values,
-        uid: user.uid,
-      };
-      setSpinning(true);
-      try {
-        if (isEdit) {
-          dataApi.id = dataForm.id;
-          await updateListBank(dataApi);
-          messageApi.success("Sửa tài khoản thành công!");
-          setIsEdit(false);
-        } else {
-          await addListBank(dataApi);
-          messageApi.success("Thêm tài khoản thành công!");
-        }
-        setIsModalAddAccount(false);
-        callApiGetListBank();
-      } catch (error) {
-        messageApi.error("Thao tác thất bại!");
-      } finally {
-        setSpinning(false);
-      }
-    });
-  };
 
   const callApiGetListBank = async () => {
     if (!user) return;
@@ -135,74 +48,145 @@ const AccountBank = () => {
   };
 
   useEffect(() => {
-    form.setFieldsValue(dataForm);
-  }, [dataForm]);
-
-  useEffect(() => {
-    callApiGetListBank();
+    if (user) {
+      callApiGetListBank();
+    }
   }, [user]);
 
-  if (loading)
-    return <p className="text-center mt-4">Đang kiểm tra đăng nhập...</p>;
-  if (!isAuthenticated)
-    return (
-      <p className="text-center mt-4">Vui lòng đăng nhập để dùng TodoList</p>
-    );
+  const onEdit = (record: any) => {
+    setIsEdit(true);
+    setEditingRecord(record);
+    form.setFieldsValue(record);
+    setIsModalVisible(true);
+  };
+
+  const onDelete = async (record: any) => {
+    setSpinning(true);
+    try {
+      await deleteListBank(record.id);
+      messageApi.success("Xóa tài khoản thành công!");
+      callApiGetListBank();
+    } catch (error) {
+      messageApi.error("Xóa tài khoản thất bại!");
+    } finally {
+      setSpinning(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setIsModalVisible(false);
+    form.resetFields();
+    setEditingRecord(null);
+    setIsEdit(false);
+  };
+
+  const handleOk = () => {
+    form.validateFields().then(async (values) => {
+      if (!user) return;
+      const dataApi = { ...values, uid: user.uid };
+      setSpinning(true);
+      try {
+        if (isEdit && editingRecord) {
+          await updateListBank({ ...dataApi, id: editingRecord.id });
+          messageApi.success("Cập nhật tài khoản thành công!");
+        } else {
+          await addListBank(dataApi);
+          messageApi.success("Thêm tài khoản thành công!");
+        }
+        handleCancel();
+        callApiGetListBank();
+      } catch (error) {
+        messageApi.error("Thao tác thất bại!");
+      } finally {
+        setSpinning(false);
+      }
+    });
+  };
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
+  }
+  if (!isAuthenticated) {
+    return <p className="text-center mt-4">Vui lòng đăng nhập để sử dụng chức năng này.</p>;
+  }
 
   return (
-    <div>
+    <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
       {contextHolder}
-      <Spin spinning={spinning} fullscreen />
-      <h2>Quản lý tài khoản</h2>
-      <Button
-        onClick={() => navigate(-1)}
-      >
-        Quay lại
-      </Button>
-      <Button
-        className="!ml-2"
-        onClick={() => {
-          setIsModalAddAccount(true);
-        }}
-      >
-        Thêm tài khoản
-      </Button>
-      <Table
-        columns={columns}
-        dataSource={listBank}
-        rowKey={(record: any) => record?.id} // hoặc record.id nếu có id
-        pagination={false}
-      />
-      <Modal
-        title="Thêm tài khoản"
-        open={isModalAddAccount}
-        onCancel={cancelForm}
-        onOk={handleOk}
-        okText="Lưu"
-        cancelText="Hủy"
-      >
-        <Form
-          layout="vertical"
-          form={form}
-          initialValues={{
-            nameBank: "",
-            amount: 0,
-          }}
-        >
-          <Form.Item
-            label="Tên tài khoản"
-            name="nameBank"
-            rules={[{ required: true, message: "Vui lòng nhập tên tài khoản" }]}
-          >
-            <Input placeholder="Nhập tài khoản..." />
-          </Form.Item>
+      <div className="max-w-4xl mx-auto">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
+            Quay lại
+          </Button>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 text-center sm:text-left">Quản lý tài khoản</h1>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalVisible(true)}>
+            Thêm tài khoản
+          </Button>
+        </header>
 
+        <Spin spinning={spinning}>
+          <List
+            grid={{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 3, xl: 3 }}
+            dataSource={listBank}
+            renderItem={(item) => (
+              <List.Item>
+                <Card
+                  hoverable
+                  actions={[
+                    <EditOutlined key="edit" onClick={() => onEdit(item)} />,
+                    <Popconfirm
+                      title="Bạn có chắc chắn muốn xóa?"
+                      onConfirm={() => onDelete(item)}
+                      okText="Có"
+                      cancelText="Không"
+                    >
+                      <DeleteOutlined key="delete" />
+                    </Popconfirm>,
+                  ]}
+                >
+                  <Card.Meta
+                    title={<span className="font-semibold text-lg">{item.nameBank}</span>}
+                    description={
+                      <span className="text-green-600 font-medium text-xl">
+                        {Number(item.amount || 0).toLocaleString("vi-VN", { style: "currency", currency: "VND" })}
+                      </span>
+                    }
+                  />
+                </Card>
+              </List.Item>
+            )}
+          />
+        </Spin>
+      </div>
+
+      <Modal
+        title={isEdit ? "Cập nhật tài khoản" : "Thêm tài khoản"}
+        open={isModalVisible}
+        onCancel={handleCancel}
+        onOk={handleOk}
+        okText={isEdit ? "Cập nhật" : "Lưu"}
+        cancelText="Hủy"
+        destroyOnClose
+      >
+        <Form form={form} layout="vertical" name="account_form" initialValues={{ amount: 0 }}>
           <Form.Item
-            label="Số tiền"
-            name="amount"
-            rules={[{ required: true, message: "Vui lòng nhập số tiền" }]}
+            name="nameBank"
+            label="Tên tài khoản"
+            rules={[{ required: true, message: "Vui lòng nhập tên tài khoản!" }]}
           >
-            <Input placeholder="Nhập số tiền..." />
+            <Input placeholder="Ví dụ: Vietcombank, Tiền mặt..." />
+          </Form.Item>
+          <Form.Item
+            name="amount"
+            label="Số dư ban đầu"
+            rules={[{ required: true, message: "Vui lòng nhập số dư!" }]}
+          >
+            <InputNumber
+              className="w-full"
+              formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+              parser={(value) => value!.replace(/\$\s?|(,*)/g, "")}
+              placeholder="0"
+            />
           </Form.Item>
         </Form>
       </Modal>

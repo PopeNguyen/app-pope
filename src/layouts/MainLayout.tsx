@@ -1,26 +1,96 @@
-// import Footer from "@/components/Footer";
+import { useState } from "react";
+import { Layout, Menu as AntMenu, Grid, Drawer, Button } from "antd";
+import { useLocation, useNavigate, Outlet } from "react-router-dom";
+import { menuItems } from "@/configs/menuConfig";
 import Header from "@/components/Header";
-import Menu from "@/components/Menu";
-import { Outlet } from "react-router-dom";
+import { ChevronsLeft, ChevronsRight } from "lucide-react";
+
+const { Sider, Content, Header: AntHeader } = Layout;
+const { useBreakpoint } = Grid;
 
 export default function MainLayout() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const screens = useBreakpoint();
+
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+  const selectedKey = menuItems.find((item) =>
+    location.pathname.startsWith(item.path)
+  )?.key;
+
+  const handleMenuClick = (e: any) => {
+    const selectedItem = menuItems.find((item) => item.key === e.key);
+    if (selectedItem) {
+      navigate(selectedItem.path);
+      if (!screens.md) {
+        setMobileDrawerOpen(false);
+      }
+    }
+  };
+
+  const menu = (
+    <AntMenu
+      theme="dark"
+      mode="inline"
+      selectedKeys={selectedKey ? [selectedKey] : []}
+      onClick={handleMenuClick}
+      items={menuItems}
+    />
+  );
+
+  const sider = (
+    <Sider
+      theme="dark"
+      collapsible
+      collapsed={collapsed}
+      onCollapse={(value) => setCollapsed(value)}
+      trigger={null} // We use a custom trigger
+      width={240}
+      className="!fixed h-full z-10 shadow-lg"
+    >
+        <div className="h-16 flex items-center justify-center text-white font-bold text-lg bg-gray-900">
+            {collapsed ? "M" : "MyAPP"}
+        </div>
+        {menu}
+    </Sider>
+  );
+
   return (
-    <div className="flex flex-col min-h-screen">
-      <div className="flex flex-1">
-        {/* Sidebar menu */}
-        <div className="hidden md:block w-[240px]">
-          <Menu />
-        </div>
-        <div className="flex flex-col flex-1 min-h-screen">
-          <Header />
-          <div className="md:p-4 bg-[#e4e3ee] text-black h-full">
-            <div className="bg-[white] p-4 md:rounded-2xl shadow-2xl h-full">
-              <Outlet />
+    <Layout className="min-h-screen bg-gray-100">
+      {screens.md ? (
+        sider
+      ) : (
+        <Drawer
+          placement="left"
+          onClose={() => setMobileDrawerOpen(false)}
+          open={mobileDrawerOpen}
+          bodyStyle={{ padding: 0, background: '#001529' }}
+          closable={false}
+        >
+            <div className="h-16 flex items-center justify-center text-white font-bold text-lg bg-gray-900">
+                MyAPP
             </div>
-          </div>
-        </div>
-      </div>
-      {/* <Footer /> */}
-    </div>
+            {menu}
+        </Drawer>
+      )}
+      <Layout style={{ marginLeft: screens.md ? (collapsed ? 80 : 240) : 0, transition: 'margin-left 0.2s' }} className="h-screen flex flex-col">
+        <AntHeader className="!p-0 !h-auto" style={{ position: 'sticky', top: 0, zIndex: 10}}>
+            <Header onMenuClick={() => setMobileDrawerOpen(true)} />
+        </AntHeader>
+        <Button 
+            type="text" 
+            icon={collapsed ? <ChevronsRight size={20} /> : <ChevronsLeft size={20} />}
+            onClick={() => setCollapsed(!collapsed)}
+            className="!hidden md:!block !absolute top-5 right-5 z-20 bg-white rounded-full shadow-md"
+        />
+        <Content className="flex-auto overflow-y-auto p-4">
+            <div className="bg-white p-4 rounded-lg shadow-md h-full">
+                <Outlet />
+            </div>
+        </Content>
+      </Layout>
+    </Layout>
   );
 }

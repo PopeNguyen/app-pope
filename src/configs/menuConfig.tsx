@@ -1,26 +1,21 @@
-// components/menuConfig.ts
-import {
-  CheckSquareOutlined,
-  DollarCircleOutlined,
-  CrownOutlined,
-} from '@ant-design/icons';
+import { ListTodo, Wallet, Swords } from 'lucide-react';
 
 export const menuItems = [
   {
     key: '1',
-    icon: <CheckSquareOutlined />,
+    icon: <ListTodo size={18} />,
     label: 'Việc cần làm',
     path: '/app-pope/todolist',
   },
   {
     key: '2',
-    icon: <DollarCircleOutlined />,
+    icon: <Wallet size={18} />,
     label: 'Thu chi cá nhân',
     path: '/app-pope/money',
   },
   {
     key: '3',
-    icon: <CrownOutlined />,
+    icon: <Swords size={18} />,
     label: 'Sổ đỏ đen',
     path: '/app-pope/casino',
   },

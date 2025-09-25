@@ -1,284 +1,301 @@
-import { Button, Modal, Input, Dropdown, message } from "antd";
-import { useEffect, useState } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "@/firebase";
-import { useParams } from "react-router-dom";
+import { useEffect, useState, useMemo } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { getMatch, updateMatch } from "@/services/casinoService";
+import {
+  Button,
+  Modal,
+  Input,
+  message,
+  Spin,
+  Row,
+  Col,
+  Card,
+  Statistic,
+  Table,
+  Popconfirm,
+  InputNumber,
+} from "antd";
+import { ArrowLeftOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 
 interface Player {
+  id: string;
   name: string;
-  isPlay: boolean;
-  totalPlayerScore: number;
 }
 
-interface PlayerScore {
-  name: string;
-  score: number;
+interface Round {
+  key: string;
+  scores: { [playerId: string]: number };
 }
 
-interface MatchRow {
-  [key: string]: number | string;
-  key: number;
-  STT: number;
+interface MatchData {
+  name: string;
+  players: Player[];
+  rounds: Round[];
 }
 
 export default function CasinoMatch() {
-  const { id } = useParams<{ id: string }>();
+  const { id: matchId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const [messageApi, contextHolder] = message.useMessage();
 
-  const [listNamePlay, setListNamePlay] = useState<Player[]>([]);
-  const [listDataMatch, setListDataMatch] = useState<PlayerScore[][]>([]);
-  const [namePeople, setNamePeople] = useState("");
-  const [dialogVisible, setDialogVisible] = useState(false);
-  const [dialogEditVisible, setDialogEditVisible] = useState(false);
-  const [dialogAddMatchVisible, setDialogAddMatchVisible] = useState(false);
-  const [dataEditPlayer, setDataEditPlayer] = useState<Player[]>([]);
-  const [dataOneMatch, setDataOneMatch] = useState<PlayerScore[]>([]);
-  const [dataUser, setDataUser] = useState<any>();
+  const [loading, setLoading] = useState(true);
+  const [matchData, setMatchData] = useState<MatchData | null>(null);
 
-  const matchRef = doc(db, "matches", id!);
+  // Player Modal
+  const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
+  const [newPlayerName, setNewPlayerName] = useState("");
+
+  // Round Modal
+  const [isRoundModalOpen, setIsRoundModalOpen] = useState(false);
+  const [editingRound, setEditingRound] = useState<Round | null>(null);
+  const [roundScores, setRoundScores] = useState<{ [playerId: string]: number }>({});
 
   useEffect(() => {
-    if (!id) return; // tránh chạy khi chưa có id
-
-    const fetchData = async () => {
-      try {
-        const matchDocRef = doc(db, "matches", id); // "matches" là tên collection
-        const docSnap = await getDoc(matchDocRef);
-
+    if (!matchId) return;
+    setLoading(true);
+    getMatch(matchId)
+      .then((docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
-          setDataUser(data)
-          
-          setListNamePlay(data?.listNamePlay || []);
-          setListDataMatch(data?.listDataMatch || []);
+          setMatchData({
+            name: data.name || "Unnamed Match",
+            players: data.players || [],
+            rounds: data.rounds || [],
+          });
         } else {
-          console.log("No such document!");
+          messageApi.error("Không tìm thấy ván đấu!");
+          navigate("/app-pope/casino");
         }
-      } catch (error) {
-        console.error("Error fetching document:", error);
-      }
+      })
+      .finally(() => setLoading(false));
+  }, [matchId, navigate, messageApi]);
+
+  const handleSave = async (newData: Partial<MatchData>) => {
+    if (!matchId) return;
+    try {
+      // Update Firestore with only the changed fields
+      await updateMatch(matchId, newData);
+
+      // Update local state safely using the previous state
+      setMatchData(prevData => ({
+        ...prevData!,
+        ...newData
+      }));
+
+      messageApi.success("Đã lưu thay đổi!");
+    } catch (error) {
+      messageApi.error("Lưu thất bại!");
+    }
+  };
+
+  const handleAddPlayer = () => {
+    if (!newPlayerName.trim()) return;
+    const newPlayer: Player = {
+      id: Date.now().toString(),
+      name: newPlayerName.trim(),
     };
-    fetchData();
-  }, [id]);
+    const newPlayers = [...(matchData?.players || []), newPlayer];
+    handleSave({ players: newPlayers });
+    setNewPlayerName("");
+    setIsPlayerModalOpen(false);
+  };
 
-  const saveToFirebase = async (
-    newListNamePlay: Player[],
-    newListDataMatch: PlayerScore[][]
-  ) => {
-    await setDoc(matchRef, {
-      ...dataUser,
-      listNamePlay: newListNamePlay,
-      listDataMatch: newListDataMatch,
+  const handleDeletePlayer = (playerId: string) => {
+    const newPlayers = matchData!.players.filter(p => p.id !== playerId);
+    // Also remove scores of the deleted player from all rounds
+    const newRounds = matchData!.rounds.map(round => {
+        const newScores = { ...round.scores };
+        delete newScores[playerId];
+        return { ...round, scores: newScores };
     });
+    handleSave({ players: newPlayers, rounds: newRounds });
+  }
+
+  const openRoundModal = (round: Round | null) => {
+    setEditingRound(round);
+    if (round) {
+      setRoundScores(round.scores);
+    } else {
+      // Initialize scores for a new round
+      const initialScores = matchData!.players.reduce((acc, player) => {
+        acc[player.id] = 0;
+        return acc;
+      }, {} as { [playerId: string]: number });
+      setRoundScores(initialScores);
+    }
+    setIsRoundModalOpen(true);
   };
 
-  const scorePlayer = (name: string) => {
-    return listDataMatch.reduce((total, match) => {
-      const player = match?.find((i) => i.name === name);
-      return total + (player?.score || 0);
-    }, 0);
-  };
-
-  const headers = ["STT", ...listNamePlay.map((p) => p.name)];
-  const tableData: MatchRow[] = listDataMatch.map((match, index) => {
-    const row: MatchRow = {
-      key: index,
-      STT: listDataMatch.length - index,
-    };
-    match.forEach((p) => {
-      row[p.name] = p.score;
-    });
-    return row;
-  });
-
-  const addPeople = () => {
-    const newList: Player[] = [
-      { name: namePeople, isPlay: true, totalPlayerScore: 0 },
-      ...listNamePlay,
-    ];
-    setListNamePlay(newList);
-    saveToFirebase(newList, listDataMatch);
-    setNamePeople("");
-    setDialogVisible(false);
-  };
-
-  const editPlayer = () => {
-    setListNamePlay(dataEditPlayer);
-    saveToFirebase(dataEditPlayer, listDataMatch);
-    setDialogEditVisible(false);
-  };
-
-  const openDialogAddMatch = () => {
-    const initMatch = listNamePlay.map((p) => ({
-      name: p.name,
-      score: 0,
-    }));
-    setDataOneMatch(initMatch);
-    setDialogAddMatchVisible(true);
-  };
-
-  const totalOneMatch = dataOneMatch.reduce((sum, i) => sum + i.score, 0);
-
-  const addMatch = () => {
-    if (totalOneMatch !== 0) {
-      message.error("Tổng điểm không cân bằng");
+  const handleSaveRound = () => {
+    const total = Object.values(roundScores).reduce((sum, score) => sum + score, 0);
+    if (total !== 0) {
+      messageApi.error("Tổng điểm của ván phải bằng 0.");
       return;
     }
-    const newList = [dataOneMatch, ...listDataMatch];
-    console.log("newList", newList);
-    // setListDataMatch(newList);
-    // saveToFirebase(listNamePlay, newList);
-    // setDialogAddMatchVisible(false);
+
+    let newRounds;
+    if (editingRound) {
+      // Update existing round
+      newRounds = matchData!.rounds.map((r) =>
+        r.key === editingRound.key ? { ...r, scores: roundScores } : r
+      );
+    } else {
+      // Add new round
+      const newRound: Round = {
+        key: Date.now().toString(),
+        scores: roundScores,
+      };
+      newRounds = [...(matchData?.rounds || []), newRound];
+    }
+    handleSave({ rounds: newRounds });
+    setIsRoundModalOpen(false);
+    setEditingRound(null);
   };
 
-  const deleteMatch = (matchIndex: number) => {
-    const newList = listDataMatch.filter((_, i) => i !== matchIndex);
-    setListDataMatch(newList);
-    saveToFirebase(listNamePlay, newList);
-  };
+  const handleDeleteRound = (roundKey: string) => {
+    const newRounds = matchData!.rounds.filter(r => r.key !== roundKey);
+    handleSave({ rounds: newRounds });
+  }
+
+  const playerTotals = useMemo(() => {
+    const totals: { [playerId: string]: number } = {};
+    matchData?.players.forEach(p => { totals[p.id] = 0; });
+    matchData?.rounds.forEach(round => {
+        for (const playerId in round.scores) {
+            if (totals[playerId] !== undefined) {
+                totals[playerId] += round.scores[playerId];
+            }
+        }
+    });
+    return totals;
+  }, [matchData]);
+
+  const tableColumns = [
+    { title: 'Ván #', dataIndex: 'roundNumber', key: 'roundNumber', width: 80 },
+    ...(matchData?.players || []).map(player => ({
+      title: player.name,
+      dataIndex: ['scores', player.id],
+      key: player.id,
+      render: (score: number) => <span style={{ color: score > 0 ? 'green' : score < 0 ? 'red' : 'black' }}>{score > 0 ? `+${score}` : score}</span>
+    })),
+    {
+        title: 'Hành động',
+        key: 'action',
+        width: 120,
+        render: (_: any, record: any) => (
+            <div className="flex gap-2">
+                <Button icon={<EditOutlined />} onClick={() => openRoundModal(record.original)} />
+                <Popconfirm title="Xóa ván này?" onConfirm={() => handleDeleteRound(record.key)}>
+                    <Button danger icon={<DeleteOutlined />} />
+                </Popconfirm>
+            </div>
+        )
+    }
+  ];
+
+  const tableDataSource = [...(matchData?.rounds || [])]
+    .reverse()
+    .map((round, index, reversedArray) => ({
+        key: round.key,
+        roundNumber: reversedArray.length - index,
+        scores: round.scores,
+        original: round
+  }));
+
+  if (loading || !matchData) {
+    return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
+  }
 
   return (
-    <div className="p-4">
-      {/* Buttons */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <Button onClick={() => setDialogVisible(true)}>Thêm người chơi</Button>
-        <Button
-          onClick={() => {
-            setDataEditPlayer([...listNamePlay]);
-            setDialogEditVisible(true);
-          }}
-        >
-          Sửa người tham gia
-        </Button>
-        <Button onClick={openDialogAddMatch}>Thêm ván mới</Button>
-      </div>
+    <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
+      {contextHolder}
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div className="flex items-center gap-2">
+            <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate('/app-pope/casino')} />
+            <h1 className="text-2xl font-bold text-gray-800">{matchData.name}</h1>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+            <Button icon={<PlusOutlined />} onClick={() => setIsPlayerModalOpen(true)}>Thêm người chơi</Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => openRoundModal(null)}>Thêm ván</Button>
+        </div>
+      </header>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="min-w-max border-collapse border border-gray-300">
-          <tbody>
-            {headers.map((header, rowIdx) => (
-              <tr key={rowIdx}>
-                <th className="border border-gray-300 px-4 py-2 sticky left-0 z-10 text-left font-semibold">
-                  {header !== "STT"
-                    ? `${header} / ${scorePlayer(header)}`
-                    : header}
-                </th>
-                {tableData.map((row, colIdx) => (
-                  <td
-                    key={colIdx}
-                    className="border border-gray-300 px-4 py-2 text-center"
-                  >
-                    {header === "STT" ? (
-                      <Dropdown
-                        menu={{
-                          items: [
-                            {
-                              label: "Xóa",
-                              key: "delete",
-                              onClick: () => deleteMatch(colIdx),
-                            },
-                          ],
-                        }}
-                        trigger={["click"]}
-                      >
-                        <Button>{row[header]}</Button>
-                      </Dropdown>
-                    ) : (
-                      row[header]?.toString() ?? ""
-                    )}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Row gutter={[16, 16]} className="mb-6">
+        {matchData.players.map(player => (
+            <Col xs={12} sm={8} md={6} lg={4} key={player.id}>
+                <Card size="small">
+                    <div className="flex justify-between items-center">
+                        <span className="font-semibold">{player.name}</span>
+                        <Popconfirm title={`Xóa người chơi ${player.name}?`} onConfirm={() => handleDeletePlayer(player.id)}>
+                            <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+                        </Popconfirm>
+                    </div>
+                    <Statistic value={playerTotals[player.id]} valueStyle={{ color: playerTotals[player.id] > 0 ? 'green' : playerTotals[player.id] < 0 ? 'red' : 'black' }} />
+                </Card>
+            </Col>
+        ))}
+      </Row>
 
-      {/* Modal: Thêm người */}
+      <Card>
+        <Table 
+            columns={tableColumns} 
+            dataSource={tableDataSource} 
+            scroll={{ x: 'max-content' }} 
+            pagination={false}
+            bordered
+            size="small"
+        />
+      </Card>
+
+      {/* Modal: Add Player */}
       <Modal
-        title="Thêm người mới"
-        open={dialogVisible}
-        onCancel={() => setDialogVisible(false)}
-        onOk={addPeople}
+        title="Thêm người chơi mới"
+        open={isPlayerModalOpen}
+        onCancel={() => setIsPlayerModalOpen(false)}
+        onOk={handleAddPlayer}
+        okText="Thêm"
+        cancelText="Hủy"
       >
         <Input
-          placeholder="Tên người mới"
-          value={namePeople}
-          onChange={(e) => setNamePeople(e.target.value)}
+          placeholder="Tên người chơi"
+          value={newPlayerName}
+          onChange={(e) => setNewPlayerName(e.target.value)}
         />
       </Modal>
 
-      {/* Modal: Sửa người */}
+      {/* Modal: Add/Edit Round */}
       <Modal
-        title="Sửa người chơi"
-        open={dialogEditVisible}
-        onCancel={() => setDialogEditVisible(false)}
-        onOk={editPlayer}
+        title={editingRound ? "Sửa ván" : "Thêm ván mới"}
+        open={isRoundModalOpen}
+        onCancel={() => setIsRoundModalOpen(false)}
+        onOk={handleSaveRound}
+        width={600}
+        okText="Lưu"
+        cancelText="Hủy"
       >
-        {dataEditPlayer.map((item, idx) => (
-          <div key={idx} className="grid grid-cols-3 gap-4 mb-2">
-            <p>{item.name}</p>
-            <p>{item.isPlay ? "Đang chơi" : "Tạm nghỉ"}</p>
-            <Button
-              onClick={() => {
-                const updated = [...dataEditPlayer];
-                updated[idx].isPlay = !updated[idx].isPlay;
-                setDataEditPlayer(updated);
-              }}
-            >
-              Đổi trạng thái
-            </Button>
-          </div>
-        ))}
-      </Modal>
-
-      {/* Modal: Thêm ván */}
-      <Modal
-        title="Thêm ván mới"
-        open={dialogAddMatchVisible}
-        onCancel={() => setDialogAddMatchVisible(false)}
-        onOk={addMatch}
-      >
-        <p className="text-center text-2xl font-bold mb-4">
-          Tổng tiền: {totalOneMatch}
-        </p>
-        {dataOneMatch.map((item, idx) =>
-          listNamePlay.find((p) => p.name === item.name && p.isPlay) ? (
-            <div
-              key={idx}
-              className={`grid grid-cols-3 gap-4 p-2 ${
-                idx % 2 === 0 ? "bg-gray-100" : ""
-              }`}
-            >
-              <div>{item.name}</div>
-              <div>{item.score}</div>
-              <div className="flex gap-2">
-                <Button
-                  size="small"
-                  onClick={() => {
-                    const updated = [...dataOneMatch];
-                    updated[idx].score += 1;
-                    setDataOneMatch(updated);
-                  }}
-                >
-                  +1
-                </Button>
-                <Button
-                  size="small"
-                  onClick={() => {
-                    const updated = [...dataOneMatch];
-                    updated[idx].score -= 1;
-                    setDataOneMatch(updated);
-                  }}
-                >
-                  -1
-                </Button>
-              </div>
+        <Spin spinning={!roundScores}>
+            <p className="text-center font-bold mb-2">Tổng điểm: {Object.values(roundScores).reduce((s, v) => s + v, 0)}</p>
+            <div className="max-h-[60vh] overflow-y-auto">
+                {matchData.players.map(player => (
+                    <Row key={player.id} align="middle" className="p-2 even:bg-gray-50">
+                        <Col span={10}><span className="font-semibold">{player.name}</span></Col>
+                        <Col span={14}>
+                            <div className="flex items-center gap-2">
+                                <Button onClick={() => setRoundScores(prev => ({...prev, [player.id]: (prev[player.id] || 0) - 1}))}>-1</Button>
+                                <InputNumber 
+                                    value={roundScores[player.id]}
+                                    onChange={(value) => setRoundScores(prev => ({...prev, [player.id]: value || 0}))}
+                                    className="flex-grow"
+                                />
+                                <Button onClick={() => setRoundScores(prev => ({...prev, [player.id]: (prev[player.id] || 0) + 1}))}>+1</Button>
+                            </div>
+                        </Col>
+                    </Row>
+                ))}
             </div>
-          ) : null
-        )}
+        </Spin>
       </Modal>
     </div>
   );

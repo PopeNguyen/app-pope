@@ -1,108 +1,64 @@
-import { Avatar, Dropdown, Menu, Space } from "antd";
-import { UserOutlined, DownOutlined, MenuOutlined } from "@ant-design/icons";
-import { useEffect, useState } from "react";
-import MobileMenuDrawer from "./MobileMenuDrawer"; // 👈 thêm dòng này
+import { Avatar, Dropdown, Menu as AntMenu, Space, Button } from "antd";
+import { User, LogOut, Menu as MenuIcon } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { auth } from '@/firebase';
+import { useAuth } from "@/hooks/useAuth";
 
-export default function Header() {
-  const username = "Thiên Khánh";
-  const balance = 12345678;
+interface HeaderProps {
+  onMenuClick: () => void;
+}
 
-  const [isMobile, setIsMobile] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false); // 👈 trạng thái mở menu drawer
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+export default function Header({ onMenuClick }: HeaderProps) {
+  const { user } = useAuth();
 
   const handleMenuClick = async ({ key }: { key: string }) => {
     switch (key) {
       case "profile":
-        console.log("Xem hồ sơ");
-        break;
-      case "deposit-history":
-        console.log("Xem lịch sử nạp tiền");
-        break;
-      case "payment-history":
-        console.log("Xem lịch sử thanh toán");
+        // Navigate to profile or open modal
         break;
       case "logout":
         await signOut(auth);
-        console.log("Đăng xuất");
         break;
     }
   };
 
   const dropdownMenu = (
-    <Menu
+    <AntMenu
       onClick={handleMenuClick}
       items={[
-        { key: "profile", label: "Xem hồ sơ" },
-        { key: "deposit-history", label: "Lịch sử nạp tiền" },
-        { key: "payment-history", label: "Lịch sử thanh toán" },
+        { key: "profile", label: "Hồ sơ", icon: <User size={16} /> },
         { type: "divider" },
-        { key: "logout", label: "Đăng xuất" },
+        { key: "logout", label: "Đăng xuất", icon: <LogOut size={16} />, danger: true },
       ]}
     />
   );
 
   return (
-    <>
-      <div
-        style={{
-          padding: "0 16px",
-          height: 64,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          boxShadow: '0px 10px 10px -10px rgba(33, 35, 38, 0.1)',
-          backgroundColor: '#ffffff',
-          color: '#000',
-          borderBottom: '1px solid #0000001a'
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {isMobile && (
-            <MenuOutlined
-              style={{ fontSize: 20, cursor: "pointer" }}
-              onClick={() => setMenuOpen(true)}
-            />
-          )}
-
-          {!isMobile && (
-            <div style={{ fontSize: 18, fontWeight: 600 }}>
-              Xin chào, {username}
-            </div>
-          )}
-        </div>
-
-        <Space>
-          <div style={{ fontSize: 16, color: "#1890ff", fontWeight: 500 }}>
-            {balance.toLocaleString()} đ
-          </div>
-
-          <Dropdown overlay={dropdownMenu} trigger={["click"]}>
-            <div style={{ cursor: "pointer" }}>
-              <Space>
-                <Avatar icon={<UserOutlined />} />
-                {!isMobile && <DownOutlined />}
-              </Space>
-            </div>
-          </Dropdown>
-        </Space>
+    <div className="bg-white h-16 px-4 flex items-center justify-between shadow-sm border-b border-gray-200">
+      {/* Mobile Menu Button & App Logo */}
+      <div className="flex items-center gap-4">
+        <Button
+          type="text"
+          icon={<MenuIcon size={20} />}
+          onClick={onMenuClick}
+          className="md:hidden"
+        />
+        <div className="font-bold text-lg text-blue-600">MyAPP</div>
       </div>
 
-      {/* Menu cho mobile (Drawer trái) */}
-      {isMobile && (
-        <MobileMenuDrawer open={menuOpen} onClose={() => setMenuOpen(false)} />
-      )}
-    </>
+      {/* Right side User Menu */}
+      <Space align="center">
+        <span className="hidden sm:block font-semibold text-gray-700">
+          {user?.displayName || user?.email}
+        </span>
+        <Dropdown overlay={dropdownMenu} trigger={["click"]}>
+          <div className="cursor-pointer">
+            <Avatar src={user?.photoURL}>
+              {user?.email?.charAt(0).toUpperCase()}
+            </Avatar>
+          </div>
+        </Dropdown>
+      </Space>
+    </div>
   );
 }

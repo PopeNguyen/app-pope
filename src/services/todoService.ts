@@ -7,44 +7,49 @@ import {
   deleteDoc,
   doc,
   query,
-  where
+  where,
+  Timestamp
 } from 'firebase/firestore';
 
-export interface TodoItem {
-  id?: string;
-  text: string;
-  uid: string; // user ID
-  priority: string,
-  deadline: string
+export type TodoStatus = 'todo' | 'inprogress' | 'done';
+export type TodoPriority = 'High' | 'Medium' | 'Low';
+
+export interface Todo {
+  id: string;
+  uid: string;
+  title: string;
+  content?: string;
+  priority: TodoPriority;
+  dueDate?: Timestamp;
+  status: TodoStatus;
 }
 
-var nameDB = 'todos'
+const nameDB = 'todos';
+const todoCollectionRef = collection(db, nameDB);
 
-// Thêm todo
-export const addTodo = async (todo: TodoItem) => {
-  const todoRef = collection(db, nameDB);
-  return await addDoc(todoRef, todo);
+// Add a new todo
+export const addTodo = (todo: Omit<Todo, 'id'>) => {
+  return addDoc(todoCollectionRef, todo);
 };
 
-// Lấy danh sách todo theo user
-export const getTodos = async (uid: string): Promise<TodoItem[]> => {
-  const todoRef = collection(db, nameDB);
-  const q = query(todoRef, where('uid', '==', uid));
+// Get all todos for a user
+export const getTodos = async (uid: string): Promise<Todo[]> => {
+  const q = query(todoCollectionRef, where('uid', '==', uid));
   const snapshot = await getDocs(q);
   return snapshot.docs.map((doc) => ({
     id: doc.id,
-    ...doc.data()
-  })) as TodoItem[];
+    ...doc.data(),
+  })) as Todo[];
 };
 
-export const updateTodo = async (todo: TodoItem) => {
-  if (!todo.id) return;
-  const todoRef = doc(db, nameDB, todo.id);
-  const { id, ...data } = todo;
-  await updateDoc(todoRef, data);
+// Update a todo
+export const updateTodo = (id: string, updates: Partial<Omit<Todo, 'id' | 'uid'>>) => {
+  const todoDocRef = doc(db, nameDB, id);
+  return updateDoc(todoDocRef, updates);
 };
 
-// Xóa todo
-export const deleteTodo = async (id: string) => {
-  await deleteDoc(doc(db, nameDB, id));
+// Delete a todo
+export const deleteTodo = (id: string) => {
+  const todoDocRef = doc(db, nameDB, id);
+  return deleteDoc(todoDocRef);
 };

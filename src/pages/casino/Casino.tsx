@@ -1,38 +1,30 @@
 import { useEffect, useState } from "react";
-import { Button, Modal, Input, message } from "antd";
+import { Button, Modal, Input, message, List, Card, Spin, Popconfirm } from "antd";
 import { useNavigate } from "react-router-dom";
-import { db } from "@/firebase";
-import {
-  collection,
-  addDoc,
-  getDocs,
-  onSnapshot,
-  query,
-  where,
-} from "firebase/firestore";
 import { useAuth } from "@/hooks/useAuth";
-
-const matchRef = collection(db, "matches");
+import { getMatches, addMatch, deleteMatch } from "@/services/casinoService";
+import { PlusOutlined, DeleteOutlined, RightOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
 
 export default function Casino() {
   const [messageApi, contextHolder] = message.useMessage();
-  const [matches, setMatches] = useState<any>([]);
+  const [matches, setMatches] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [nameMatch, setNameMatch] = useState("");
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Lấy danh sách ván từ Firestore (realtime)
   useEffect(() => {
-    if (!user?.uid) return; // tránh chạy khi uid chưa có
+    if (!user?.uid) {
+      setLoading(false);
+      return;
+    }
 
-    const q = query(matchRef, where("uid", "==", user?.uid));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const result = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setMatches(result);
+    setLoading(true);
+    const unsubscribe = getMatches(user.uid, (matches) => {
+      setMatches(matches);
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -46,56 +38,87 @@ export default function Casino() {
     }
 
     try {
-      await addDoc(matchRef, { name, uid: user?.uid });
+      await addMatch({ name, uid: user!.uid });
       setNameMatch("");
       setIsModalOpen(false);
       messageApi.success("Thêm ván thành công!");
     } catch (error) {
       console.error(error);
-      messageApi.error("Thêm thất bại.");
+      messageApi.error("Thêm ván thất bại.");
     }
   };
 
-  const goTo = (name: any) => {
-    navigate(`/app-pope/casino/${name}`);
-  };
+  const handleDeleteMatch = async (matchId: string) => {
+    try {
+        await deleteMatch(matchId);
+        messageApi.success("Xóa ván thành công!");
+    } catch (error) {
+        messageApi.error("Xóa ván thất bại.");
+    }
+  }
 
   return (
-    <div style={{ padding: 16 }}>
-      {contextHolder}
-      <Button type="primary" onClick={() => setIsModalOpen(true)}>
-        Thêm Ván
-      </Button>
+    <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
+        {contextHolder}
+        <div className="max-w-4xl mx-auto">
+            <header className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold text-gray-800">Sổ đỏ đen</h1>
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
+                    Thêm Ván
+                </Button>
+            </header>
 
-      <div
-        className="mt-10"
-        style={{ display: "flex", flexWrap: "wrap", gap: 8 }}
-      >
-        {matches?.map((item: any) => (
-          <Button
-            key={item?.id}
-            type="default"
-            onClick={() => goTo(item?.id)}
-            className="border border-gray-300 rounded-lg px-4 py-1 bg-white shadow-sm hover:border-blue-500 transition-all"
-          >
-            {item?.name}
-          </Button>
-        ))}
-      </div>
+            <Spin spinning={loading}>
+                <List
+                    grid={{ gutter: 16, xs: 1, sm: 2, md: 3, lg: 3, xl: 3 }}
+                    dataSource={matches}
+                    renderItem={(item) => (
+                    <List.Item>
+                        <Card hoverable onClick={() => navigate(`/app-pope/casino/${item.id}`)}>
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <div className="font-semibold text-lg">{item.name}</div>
+                                    <div className="text-sm text-gray-500">
+                                        {item.createdAt ? dayjs(item.createdAt.toDate()).format('DD/MM/YYYY') : ''}
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Popconfirm
+                                        title="Bạn có chắc chắn muốn xóa ván này?"
+                                        onConfirm={(e) => {
+                                            e?.stopPropagation();
+                                            handleDeleteMatch(item.id);
+                                        }}
+                                        onCancel={(e) => e?.stopPropagation()}
+                                        okText="Có"
+                                        cancelText="Không"
+                                    >
+                                        <Button type="text" danger icon={<DeleteOutlined />} onClick={(e) => e.stopPropagation()} />
+                                    </Popconfirm>
+                                    <RightOutlined />
+                                </div>
+                            </div>
+                        </Card>
+                    </List.Item>
+                    )}
+                />
+            </Spin>
+        </div>
 
-      <Modal
-        title="Thêm ván mới"
-        open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
-        onOk={handleAddMatch}
-      >
-        <p>Đặt tên theo cú pháp ngày-tháng-năm. VD: 23-6-2025</p>
-        <Input
-          placeholder="Tên ván mới"
-          value={nameMatch}
-          onChange={(e) => setNameMatch(e.target.value)}
-        />
-      </Modal>
+        <Modal
+            title="Thêm ván mới"
+            open={isModalOpen}
+            onCancel={() => setIsModalOpen(false)}
+            onOk={handleAddMatch}
+            okText="Thêm"
+            cancelText="Hủy"
+        >
+            <Input
+            placeholder="Tên ván, ví dụ: Tối ngày 25/09"
+            value={nameMatch}
+            onChange={(e) => setNameMatch(e.target.value)}
+            />
+        </Modal>
     </div>
   );
 }
