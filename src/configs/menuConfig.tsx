@@ -1,4 +1,4 @@
-import { ListTodo, Wallet, Swords } from 'lucide-react';
+import { ListTodo, Wallet, Swords, BookOpen } from 'lucide-react';
 
 export const menuItems = [
   {
@@ -18,5 +18,11 @@ export const menuItems = [
     icon: <Swords size={18} />,
     label: 'Sổ đỏ đen',
     path: '/app-pope/casino',
+  },
+  {
+    key: '4',
+    icon: <BookOpen size={18} />,
+    label: 'Từ vựng',
+    path: '/app-pope/learn-english',
   },
 ];

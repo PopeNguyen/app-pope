@@ -12,6 +12,8 @@ import CasinoMatch from '@/pages/casino/CasinoMatch';
 import { withAuth } from '@/utils/withAuth';
 import AccountBank from '@/pages/money/AccountBank';
 import CategoryBank from '@/pages/money/CategoryBank';
+import ListProject from '@/pages/learnEnglish/LearnEnglish';
+import VocabularyList from '@/pages/learnEnglish/VocabularyList';
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -41,6 +43,8 @@ const router = createBrowserRouter([
       { path: 'category-bank', element: withAuth(<CategoryBank />) },
       { path: 'casino', element: withAuth(<Casino />) },
       { path: 'casino/:id', element: withAuth(<CasinoMatch />) },
+      { path: 'learn-english', element: withAuth(<ListProject />) },
+      { path: 'learn-english/:listId', element: withAuth(<VocabularyList />) },
     ],
   },
 ]);
