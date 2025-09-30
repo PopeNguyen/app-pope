@@ -248,7 +248,7 @@ const Money = () => {
 
           <Card>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                <div class="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
                     <Radio.Group value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
                         <Radio.Button value="all">Tất cả</Radio.Button>
                         <Radio.Button value="income">Thu nhập</Radio.Button>
