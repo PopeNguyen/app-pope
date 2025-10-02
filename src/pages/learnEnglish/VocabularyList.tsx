@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { getWords, addWord, updateWord, deleteWords, updateWordStats } from '@/services/learnEnglishService';
 import { useAuth } from '@/hooks/useAuth';
 import { Layout, Typography, Form, Input, Button, List, Card, Modal, Checkbox, Row, Col, Radio, Badge, Tooltip, Space, Alert } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SaveOutlined, ReadOutlined, CreditCardOutlined, UnorderedListOutlined, ArrowLeftOutlined, SoundOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SaveOutlined, ReadOutlined, CreditCardOutlined, UnorderedListOutlined, ArrowLeftOutlined, SoundOutlined, FormOutlined, AppstoreOutlined } from '@ant-design/icons';
 import FlashcardMode from '@/components/learnEnglish/FlashcardMode';
 import LearnMode from '@/components/learnEnglish/LearnMode';
 
@@ -19,12 +19,11 @@ const VocabularyList = () => {
   const [editingWord, setEditingWord] = useState<any>(null);
   const [mode, setMode] = useState('view'); // view, learn, flashcard
   const [learningWords, setLearningWords] = useState<any[]>([]); // Words for the current session
+  const [learnModeType, setLearnModeType] = useState<'typing' | 'multiple-choice'>('typing');
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [isLearnModeModalVisible, setIsLearnModeModalVisible] = useState(false);
   const [addForm] = Form.useForm();
   const [editForm] = Form.useForm();
-
-  const newWords = words.filter(w => w.srsLevel === 0);
-  const dueForReviewWords = words.filter(w => w.nextReviewDate && w.nextReviewDate.toDate() < new Date());
 
   useEffect(() => {
     if (user && listId) {
@@ -35,9 +34,14 @@ const VocabularyList = () => {
     }
   }, [user, listId]);
 
-  const handleStartLearnSession = (sessionType: 'new' | 'review') => {
-    setLearningWords(sessionType === 'new' ? newWords : dueForReviewWords);
-    setMode('learn');
+  const handleStartLearnSession = () => {
+    setIsLearnModeModalVisible(true);
+  };
+
+  const handleSelectLearnMode = (type: 'typing' | 'multiple-choice') => {
+    setLearnModeType(type);
+    setLearningWords(words);
+    setIsLearnModeModalVisible(false);
   };
 
   const handleWordResult = (wordId: string, isCorrect: boolean) => {
@@ -93,7 +97,16 @@ const VocabularyList = () => {
   const renderContent = () => {
     switch (mode) {
       case 'learn':
-        return learningWords.length > 0 ? <LearnMode words={learningWords} onWordResult={handleWordResult} isActive={mode === 'learn'} /> : null;      case 'flashcard':
+        if (learningWords.length > 0) {
+          return <LearnMode words={learningWords} onWordResult={handleWordResult} isActive={mode === 'learn'} learnType={learnModeType} />;
+        }
+        return (
+            <div style={{textAlign: 'center', marginTop: 50}}>
+                <Title level={3}>Ready to learn?</Title>
+                <Paragraph>Click the "Start Learning" button above to begin.</Paragraph>
+            </div>
+        );
+      case 'flashcard':
         return <FlashcardMode words={words} isActive={mode === 'flashcard'} />;
       case 'view':
       default:
@@ -184,28 +197,45 @@ const VocabularyList = () => {
               </Radio.Group>
 
               {selectedWords.length > 0 && mode === 'view' && (
-                <Button className='pl-2' size="large" onClick={showDeleteConfirm} style={{marginTop: 16}}>
-                  Delete ({selectedWords.length})
-                </Button>
+                <Space style={{marginTop: 16}}>
+                  <Button danger size="large" onClick={showDeleteConfirm} icon={<DeleteOutlined />}>
+                    Delete ({selectedWords.length})
+                  </Button>
+                </Space>
               )}
 
               {mode === 'learn' && (
                 <div style={{marginTop: 24}}>
-                    <Title level={4}>Learn Session</Title>
-                    <Space wrap>
-                        <Button type="primary" onClick={() => handleStartLearnSession('new')} disabled={newWords.length === 0}>
-                            Learn {newWords.length} New Words
-                        </Button>
-                        <Button onClick={() => handleStartLearnSession('review')} disabled={dueForReviewWords.length === 0}>
-                            <Badge count={dueForReviewWords.length} color="gold" /> Review Due Words
-                        </Button>
-                    </Space>
+                    <Button type="primary" size="large" block onClick={handleStartLearnSession} disabled={words.length === 0}>
+                        Start Learning Session
+                    </Button>
                 </div>
               )}
 
             </Card>
 
             {renderContent()}
+
+            <Modal
+              title="Choose a Learning Mode"
+              visible={isLearnModeModalVisible}
+              onCancel={() => setIsLearnModeModalVisible(false)}
+              footer={null}
+              centered
+            >
+              <Row gutter={[16, 16]} style={{marginTop: 24}}>
+                <Col span={12}>
+                  <Button block size="large" icon={<FormOutlined />} onClick={() => handleSelectLearnMode('typing')}>
+                    Input Mode
+                  </Button>
+                </Col>
+                <Col span={12}>
+                  <Button block size="large" icon={<AppstoreOutlined />} onClick={() => handleSelectLearnMode('multiple-choice')}>
+                    Multiple Choice
+                  </Button>
+                </Col>
+              </Row>
+            </Modal>
 
             <Modal
               title={<div className="text-white font-bold p-2">{`Delete ${selectedWords.length} word(s)?`}</div>}

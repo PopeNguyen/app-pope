@@ -9,7 +9,8 @@ import {
   updateDoc,
   writeBatch,
   getDocs,
-  increment
+  increment,
+  deleteField
 } from 'firebase/firestore';
 
 const learnEnglishCollectionRef = collection(db, 'learnEnglish');
@@ -28,7 +29,11 @@ export const getWords = (uid: string, listId: string, callback: (words: any[]) =
 
 // Add a new word
 export const addWord = (wordData: { word: string; meaning: string; uid: string; listId: string }) => {
-  return addDoc(learnEnglishCollectionRef, wordData);
+  return addDoc(learnEnglishCollectionRef, {
+    ...wordData,
+    correctCount: 0,
+    incorrectCount: 0,
+  });
 };
 
 // Update a word's text
@@ -51,7 +56,6 @@ export const deleteWords = (wordIds: string[]) => {
 export const updateWordStats = (wordId: string, isCorrect: boolean) => {
   const wordDocRef = doc(db, 'learnEnglish', wordId);
   const updateData = {
-    lastReviewedDate: new Date(),
     [isCorrect ? 'correctCount' : 'incorrectCount']: increment(1)
   };
   return updateDoc(wordDocRef, updateData);

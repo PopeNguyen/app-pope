@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Button, Progress, Typography, Input, Form, Row, Col, Result, Space } from 'antd';
+import { Card, Button, Progress, Typography, Input, Form, Row, Col, Result, Space, Spin } from 'antd';
 import { CheckCircleTwoTone, CloseCircleTwoTone, SoundOutlined, EditOutlined, AppstoreOutlined } from '@ant-design/icons';
 import { speak } from '@/utils/tts';
 
@@ -9,24 +9,23 @@ interface LearnModeProps {
   words: any[];
   onWordResult: (wordId: string, isCorrect: boolean) => void;
   isActive: boolean;
+  learnType: 'typing' | 'multiple-choice';
 }
 
-const LearnMode: React.FC<LearnModeProps> = ({ words, onWordResult, isActive }) => {
-  const [learnType, setLearnType] = useState<'typing' | 'multiple-choice' | null>('typing');
+const LearnMode: React.FC<LearnModeProps> = ({ words, onWordResult, isActive, learnType }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [shuffledWords, setShuffledWords] = useState<any[]>([]);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | 'none'>('none');
   const [isFinished, setIsFinished] = useState(false);
-  const [multipleChoiceOptions, setMultipleChoiceOptions] = useState<any[]>([]);
-  const [questionType, setQuestionType] = useState<'word' | 'meaning'>('word');
+  const [multipleChoiceOptions, setMultipleChoiceOptions] = useState<string[]>([]);
 
   const [form] = Form.useForm();
   const inputRef = useRef<any>(null);
 
   useEffect(() => {
-    startSession('typing');
-  }, []);
+    startSession();
+  }, [words, learnType]);
 
   // Typing Test Logic
   useEffect(() => {
@@ -56,13 +55,11 @@ const LearnMode: React.FC<LearnModeProps> = ({ words, onWordResult, isActive }) 
 
   const generateOptions = () => {
     const currentWord = shuffledWords[currentIndex];
-    const isAskingForMeaning = Math.random() > 0.5;
-    setQuestionType(isAskingForMeaning ? 'word' : 'meaning');
+    const correctAnswer = currentWord.word;
 
-    const correctAnswer = isAskingForMeaning ? currentWord.meaning : currentWord.word;
     const distractors = shuffledWords
       .filter(w => w.id !== currentWord.id)
-      .map(w => isAskingForMeaning ? w.meaning : w.word)
+      .map(w => w.word) // Always use the word as a choice
       .sort(() => Math.random() - 0.5)
       .slice(0, 3);
 
@@ -72,13 +69,12 @@ const LearnMode: React.FC<LearnModeProps> = ({ words, onWordResult, isActive }) 
 
   const handleCheckMultipleChoiceAnswer = (selectedAnswer: string) => {
     const currentWord = shuffledWords[currentIndex];
-    const correctAnswer = questionType === 'word' ? currentWord.meaning : currentWord.word;
+    const correctAnswer = currentWord.word;
     const isCorrect = selectedAnswer === correctAnswer;
     if (isCorrect) {
       setFeedback('correct');
       setScore(prev => prev + 1);
-    }
-    else {
+    } else {
       setFeedback('incorrect');
     }
     onWordResult(currentWord.id, isCorrect);
@@ -86,8 +82,7 @@ const LearnMode: React.FC<LearnModeProps> = ({ words, onWordResult, isActive }) 
   };
 
   // Common Logic
-  const startSession = (type: 'typing' | 'multiple-choice') => {
-    setLearnType(type);
+  const startSession = () => {
     setShuffledWords([...words].sort(() => Math.random() - 0.5));
     setCurrentIndex(0);
     setScore(0);
@@ -114,7 +109,7 @@ const LearnMode: React.FC<LearnModeProps> = ({ words, onWordResult, isActive }) 
     if (!isActive) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Control') {
-        if (!isFinished && shuffledWords.length > 0) {
+        if (!isFinished && shuffledWords.length > 0 && shuffledWords[currentIndex]) {
            event.preventDefault();
            handleSpeak(shuffledWords[currentIndex].word);
         }
@@ -129,19 +124,17 @@ const LearnMode: React.FC<LearnModeProps> = ({ words, onWordResult, isActive }) 
     return <Title level={3} style={{ textAlign: 'center', marginTop: 50 }}>No words to start learning.</Title>;
   }
 
-
-
   if (isFinished) {
     return (
       <Result
         status={score / shuffledWords.length >= 0.8 ? "success" : "warning"}
         title={`Session Complete! You scored ${score} out of ${shuffledWords.length}`}
         extra={[
-          <Button type="primary" key="restart" onClick={() => startSession(learnType!)}>
+          <Button type="primary" key="restart" onClick={startSession}>
             Learn Again
           </Button>,
-          <Button key="back" onClick={() => { setLearnType(null); setIsFinished(false); }}>
-            Back to Menu
+          <Button key="back" onClick={() => window.location.reload()}>
+            Back to List
           </Button>,
         ]}
       />
@@ -149,6 +142,16 @@ const LearnMode: React.FC<LearnModeProps> = ({ words, onWordResult, isActive }) 
   }
 
   const currentWord = shuffledWords[currentIndex];
+
+  if (!currentWord) {
+    return (
+      <div style={{textAlign: 'center', marginTop: 50}}>
+        <Spin size="large" />
+        <Title level={3} style={{marginTop: 16}}>Loading session...</Title>
+      </div>
+    );
+  }
+
   const progressPercent = Math.round(((currentIndex) / shuffledWords.length) * 100);
 
   return (
@@ -157,7 +160,7 @@ const LearnMode: React.FC<LearnModeProps> = ({ words, onWordResult, isActive }) 
       {learnType === 'typing' ? (
         // Typing Test UI
         <div style={{ marginTop: 32, textAlign: 'center' }}>
-          <Paragraph style={{fontSize: 18, color: 'gray'}}>Meaning:</Paragraph>
+          <Paragraph style={{fontSize: 18, color: 'gray'}}>Meaning (Vietnamese):</Paragraph>
           <Title level={2} style={{ minHeight: 60 }}>{currentWord.meaning}</Title>
           <Form form={form} onFinish={handleCheckTypingAnswer} style={{ marginTop: 24 }}>
             <Form.Item name="answer"><Input ref={inputRef} placeholder="Type the English word" size="large" disabled={feedback !== 'none'} autoComplete="off" style={{fontSize: 18, textAlign: 'center'}} /></Form.Item>
@@ -167,8 +170,8 @@ const LearnMode: React.FC<LearnModeProps> = ({ words, onWordResult, isActive }) 
       ) : (
         // Multiple Choice UI
         <div style={{ marginTop: 32, textAlign: 'center' }}>
-          <Paragraph style={{fontSize: 18, color: 'gray'}}>{questionType === 'word' ? 'Word:' : 'Meaning:'}</Paragraph>
-          <Title level={2} style={{ minHeight: 60 }}>{questionType === 'word' ? currentWord.word : currentWord.meaning}</Title>
+          <Paragraph style={{fontSize: 18, color: 'gray'}}>Meaning (Vietnamese):</Paragraph>
+          <Title level={2} style={{ minHeight: 60 }}>{currentWord.meaning}</Title>
           <Space direction="vertical" style={{width: '100%', marginTop: 24}}>
             {multipleChoiceOptions.map((option, index) => (
               <Button key={index} block size="large" disabled={feedback !== 'none'} onClick={() => handleCheckMultipleChoiceAnswer(option)}>
@@ -188,7 +191,7 @@ const LearnMode: React.FC<LearnModeProps> = ({ words, onWordResult, isActive }) 
             </Text>
             {feedback === 'incorrect' && (
               <Paragraph style={{marginTop: 8}}>
-                The correct answer was: <Text strong>{questionType === 'word' ? currentWord.meaning : currentWord.word}</Text>
+                The correct answer was: <Text strong>{currentWord.word}</Text>
                 <Button type="text" icon={<SoundOutlined />} onClick={() => handleSpeak(currentWord.word)} />
               </Paragraph>
             )}

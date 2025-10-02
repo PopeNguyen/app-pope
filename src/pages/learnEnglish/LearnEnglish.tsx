@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getVocabularyLists, addVocabularyList, updateVocabularyList, deleteVocabularyList } from '@/services/learnEnglishListService';
 import { useAuth } from '@/hooks/useAuth';
 import { Layout, Typography, Form, Input, Button, List, Card, Modal, Col, Row, Space, DatePicker, Tag, Tooltip } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import moment from 'moment';
 
 const { Content } = Layout;
@@ -30,7 +30,6 @@ const LearnEnglish = () => {
     setEditingList(list);
     form.setFieldsValue({ 
       name: list ? list.name : '',
-      firstReviewDate: list?.nextReviewDate ? moment(list.nextReviewDate.toDate()) : null
     });
     setIsModalVisible(true);
   };
@@ -41,11 +40,10 @@ const LearnEnglish = () => {
     form.resetFields();
   };
 
-  const handleFormSubmit = async (values: { name: string; firstReviewDate?: any }) => {
+  const handleFormSubmit = async (values: { name: string }) => {
     if (user && values.name.trim() !== '') {
       const data = {
         name: values.name.trim(),
-        firstReviewDate: values.firstReviewDate ? values.firstReviewDate.toDate() : undefined
       };
 
       if (editingList) {
@@ -67,8 +65,6 @@ const LearnEnglish = () => {
     });
   };
 
-  const isListDue = (list: any) => list.nextReviewDate && list.nextReviewDate.toDate() < new Date();
-
   return (
     <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
       <Content style={{ padding: '24px' }}>
@@ -76,7 +72,7 @@ const LearnEnglish = () => {
           <Col xs={24} sm={22} md={20} lg={18} xl={16}>
             <div style={{ textAlign: 'center', marginBottom: '40px' }}>
               <Title level={1} style={{ color: '#1890ff' }}>Vocabulary Lists</Title>
-              <Paragraph type="secondary">Manage your lists and review due vocabulary.</Paragraph>
+              <Paragraph type="secondary">Manage your vocabulary lists.</Paragraph>
             </div>
 
             <Card style={{ marginBottom: '24px' }}>
@@ -89,12 +85,10 @@ const LearnEnglish = () => {
               grid={{ gutter: 16, xs: 1, sm: 2, md: 2, lg: 3, xl: 3, xxl: 4 }}
               dataSource={lists}
               renderItem={list => {
-                const due = isListDue(list);
                 return (
                   <List.Item>
                     <Card
                       hoverable
-                      style={{ borderColor: due ? '#faad14' : undefined, borderWidth: 2 }}
                       actions={[
                         <Tooltip title="Edit List"><EditOutlined key="edit" onClick={() => showModal(list)} /></Tooltip>,
                         <Tooltip title="Delete List"><DeleteOutlined key="delete" onClick={() => showDeleteConfirm(list.id)} /></Tooltip>,
@@ -103,14 +97,7 @@ const LearnEnglish = () => {
                       <Link to={`/app-pope/learn-english/${list.id}`}>
                         <Card.Meta
                           title={<Title level={4}>{list.name}</Title>}
-                          description={due ? 
-                            <Tag color="gold">Review Due!</Tag> : 
-                            (list.nextReviewDate ? `Next review: ${moment(list.nextReviewDate.toDate()).format('MMM D')}` : 'Not scheduled')
-                          }
                         />
-                        <div style={{marginTop: 16}}>
-                          <Tag icon={<ClockCircleOutlined />}>Level {list.srsLevel || 0}</Tag>
-                        </div>
                       </Link>
                     </Card>
                   </List.Item>
@@ -131,10 +118,6 @@ const LearnEnglish = () => {
           <Form.Item name="name" label="List Name" rules={[{ required: true, message: 'Please input the list name!' }]}>
             <Input size="large" placeholder="e.g., IELTS, Travel Words..." />
           </Form.Item>
-          <Form.Item name="firstReviewDate" label="First Review Date">
-            <DatePicker size="large" style={{ width: '100%' }} />
-          </Form.Item>
-          <Paragraph type="secondary">Set a first review date to start the learning cycle. Leave it blank if you don't want to schedule it yet.</Paragraph>
           <Form.Item style={{ textAlign: 'right', marginTop: 24 }}>
             <Space>
               <Button size="large" onClick={handleCancel}>Cancel</Button>
