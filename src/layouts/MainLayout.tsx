@@ -68,6 +68,7 @@ export default function MainLayout() {
           open={mobileDrawerOpen}
           bodyStyle={{ padding: 0, background: '#001529' }}
           closable={false}
+          width={'85%'}
         >
             <div className="h-16 flex items-center justify-center text-white font-bold text-lg bg-gray-900">
                 MyAPP
