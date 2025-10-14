@@ -80,14 +80,8 @@ export default function MainLayout() {
         <AntHeader className="!p-0 !h-auto" style={{ position: 'sticky', top: 0, zIndex: 10}}>
             <Header onMenuClick={() => setMobileDrawerOpen(true)} />
         </AntHeader>
-        <Button 
-            type="text" 
-            icon={collapsed ? <ChevronsRight size={20} /> : <ChevronsLeft size={20} />}
-            onClick={() => setCollapsed(!collapsed)}
-            className="!hidden md:!block !absolute top-5 right-5 z-20 bg-white rounded-full shadow-md"
-        />
         <Content className="flex-auto overflow-y-auto p-4">
-            <div className="bg-white p-4 rounded-lg shadow-md h-full">
+            <div className="bg-white p-4 rounded-lg shadow-md">
                 <Outlet />
             </div>
         </Content>

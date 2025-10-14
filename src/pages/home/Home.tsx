@@ -3,13 +3,22 @@ import React, { useState, useEffect } from 'react';
 import './Home.css';
 import background from '@/assets/img/background_home.jpg';
 import avatar from '@/assets/img/avatar.png';
+import logo from '@/assets/img/logo_full.png';
 import { useNavigate } from 'react-router-dom';
-import { MenuOutlined } from '@ant-design/icons';
+import { MenuOutlined, CodeOutlined, DatabaseOutlined, HddOutlined, ToolOutlined, HighlightOutlined, MobileOutlined, GithubOutlined, LinkOutlined, MailOutlined, PhoneOutlined, EnvironmentOutlined, LinkedinOutlined, FacebookOutlined, TwitterOutlined, InstagramOutlined } from '@ant-design/icons';
+import ScrollToTop from '@/components/ScrollToTop';
+
+import AOS from 'aos';
+import 'aos/dist/aos.css';
 
 const Home = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    AOS.init({ duration: 1000, once: true });
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,7 +30,7 @@ const Home = () => {
         if (element) {
           const offsetTop = element.offsetTop;
           const offsetHeight = element.offsetHeight;
-          
+
           if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
             setActiveSection(section);
             break;
@@ -35,7 +44,7 @@ const Home = () => {
   }, []);
 
   const scrollToSection = (sectionId: any) => {
-    if (sectionId==='app') {
+    if (sectionId === 'app') {
       navigate(`/app-pope/todolist`)
     } else {
       const element = document.getElementById(sectionId);
@@ -49,7 +58,7 @@ const Home = () => {
   const skills = [
     {
       category: 'Frontend',
-      icon: 'ri-html5-fill',
+      icon: <CodeOutlined />,
       items: [
         { name: 'HTML5 & CSS3', level: 95 },
         { name: 'JavaScript & TypeScript', level: 90 },
@@ -58,7 +67,7 @@ const Home = () => {
     },
     {
       category: 'Backend',
-      icon: 'ri-server-line',
+      icon: <DatabaseOutlined />,
       items: [
         { name: 'Node.js & Express', level: 85 },
         { name: 'Python & Django', level: 80 },
@@ -67,7 +76,7 @@ const Home = () => {
     },
     {
       category: 'Database',
-      icon: 'ri-database-2-line',
+      icon: <HddOutlined />,
       items: [
         { name: 'MySQL & PostgreSQL', level: 85 },
         { name: 'MongoDB', level: 80 },
@@ -76,7 +85,7 @@ const Home = () => {
     },
     {
       category: 'Tools & DevOps',
-      icon: 'ri-tools-line',
+      icon: <ToolOutlined />,
       items: [
         { name: 'Git & GitHub', level: 95 },
         { name: 'Docker & AWS', level: 75 },
@@ -85,7 +94,7 @@ const Home = () => {
     },
     {
       category: 'Design',
-      icon: 'ri-palette-line',
+      icon: <HighlightOutlined />,
       items: [
         { name: 'UI/UX Design', level: 85 },
         { name: 'Figma & Adobe XD', level: 80 },
@@ -94,7 +103,7 @@ const Home = () => {
     },
     {
       category: 'Mobile',
-      icon: 'ri-smartphone-line',
+      icon: <MobileOutlined />,
       items: [
         { name: 'React Native', level: 75 },
         { name: 'Flutter', level: 65 },
@@ -156,11 +165,16 @@ const Home = () => {
 
   return (
     <div className="App">
+      <ScrollToTop/>
       {/* Header Navigation */}
-      <header className={`py-4 fixed top-0 w-full z-50 backdrop-blur-sm border-b border-slate-700 bg-slate-900/95 ${isMenuOpen ? 'bg-slate-900' : ''}`}>
+      <header className={`py-1.5 fixed top-0 w-full z-50 backdrop-blur-sm border-b border-slate-700 bg-slate-900/95 ${isMenuOpen ? 'bg-slate-900' : ''}`}>
         <nav className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="text-2xl font-bold text-primary glow-text">
-            &lt;TrungPhong /&gt;
+            <img
+              src={logo}
+              alt="Logo"
+              className="w-[100px] h-full invert object-cover object-center"
+            />
           </div>
           <div className="hidden md:flex gap-10">
             {['about', 'skills', 'projects', 'contact', 'app'].map((section) => (
@@ -177,14 +191,14 @@ const Home = () => {
               </button>
             ))}
           </div>
-          <button 
+          <button
             className="md:hidden text-white"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             <MenuOutlined />
           </button>
         </nav>
-        
+
         {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden bg-slate-900/95 py-4 px-6">
@@ -222,7 +236,7 @@ const Home = () => {
                 Front-end Developer
               </div>
               <p className="text-lg mb-8 text-slate-400 leading-relaxed">
-                Tôi tạo ra những trải nghiệm web tuyệt vời với code sạch và thiết kế đẹp mắt. 
+                Tôi tạo ra những trải nghiệm web tuyệt vời với code sạch và thiết kế đẹp mắt.
                 Đam mê công nghệ và luôn học hỏi những điều mới mẻ.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -236,9 +250,9 @@ const Home = () => {
             </div>
             <div className="flex justify-center">
               <div className="w-80 h-80 rounded-full terminal-border p-2">
-                <img 
-                  src={avatar} 
-                  alt="Nguyễn Trung Phong" 
+                <img
+                  src={avatar}
+                  alt="Nguyễn Trung Phong"
                   className="w-full h-full rounded-full object-cover object-center"
                 />
               </div>
@@ -250,29 +264,25 @@ const Home = () => {
       {/* About Me Section */}
       <section id="about" className="py-20 bg-slate-800">
         <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16" data-aos="fade-up">
             <h2 className="text-4xl font-bold mb-4 text-primary">&lt; Về tôi /&gt;</h2>
-            <div className="w-20 h-1 bg-secondary mx-auto"></div>
+            <div className="w-20 h-1 bg-[#00ff88] mx-auto"></div>
           </div>
           <div className="grid md:grid-cols-2 gap-12 items-start">
-            <div className="space-y-6">
+            <div className="space-y-6" data-aos="fade-up" data-aos-delay="200">
               <h3 className="text-2xl font-semibold text-secondary mb-4">Câu chuyện của tôi</h3>
               <p className="text-slate-300 leading-relaxed">
-                Với hơn 4 năm kinh nghiệm trong lĩnh vực phát triển web, tôi đã tham gia xây dựng 
-                nhiều dự án từ website doanh nghiệp đến ứng dụng web phức tạp. Tôi tin rằng code 
+                Với hơn 3 năm kinh nghiệm trong lĩnh vực phát triển web, tôi đã tham gia xây dựng
+                nhiều dự án từ website doanh nghiệp đến ứng dụng web phức tạp. Tôi tin rằng code
                 tốt không chỉ hoạt động mà còn phải dễ đọc và bảo trì.
               </p>
               <p className="text-slate-300 leading-relaxed">
-                Tôi luôn theo đuổi sự hoàn hảo trong từng dòng code và không ngừng học hỏi 
-                các công nghệ mới để mang lại giá trị tốt nhất cho khách hàng. Đam mê của tôi 
+                Tôi luôn theo đuổi sự hoàn hảo trong từng dòng code và không ngừng học hỏi
+                các công nghệ mới để mang lại giá trị tốt nhất cho khách hàng. Đam mê của tôi
                 là biến những ý tưởng thành hiện thực thông qua công nghệ.
               </p>
-              <p className="text-slate-300 leading-relaxed">
-                Ngoài lập trình, tôi còn yêu thích thiết kế UI/UX và luôn cập nhật xu hướng 
-                mới trong ngành để tạo ra những sản phẩm không chỉ đẹp mà còn thân thiện với người dùng.
-              </p>
             </div>
-            <div className="skill-card p-6 !rounded-lg">
+            <div className="skill-card p-6 !rounded-lg" data-aos="fade-up" data-aos-delay="400">
               <h3 className="text-xl font-semibold text-secondary mb-6">Thông tin cá nhân</h3>
               <div className="space-y-4 font-mono text-sm">
                 <div className="flex">
@@ -308,15 +318,15 @@ const Home = () => {
       {/* Skills Section */}
       <section id="skills" className="py-20 code-bg">
         <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16" data-aos="fade-up">
             <h2 className="text-4xl font-bold mb-4 text-primary">&lt; Kỹ năng /&gt;</h2>
-            <div className="w-20 h-1 bg-secondary mx-auto"></div>
+            <div className="w-20 h-1 bg-[#00ff88] mx-auto"></div>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {skills.map((skill, index) => (
-              <div key={index} className="skill-card p-6 !rounded-lg">
-                <div className="w-12 h-12 flex items-center justify-center bg-orange-500 !rounded-lg mb-4">
-                  <i className={`${skill.icon} text-2xl text-white`}></i>
+              <div key={index} className="skill-card p-6 !rounded-lg" data-aos="fade-up" data-aos-delay={index * 100}>
+                <div className="w-12 h-12 flex items-center justify-center bg-orange-500 !rounded-lg mb-4 text-2xl text-white">
+                  {skill.icon}
                 </div>
                 <h3 className="text-xl font-semibold mb-2 text-secondary">{skill.category}</h3>
                 {skill.items.map((item, itemIndex) => (
@@ -326,8 +336,8 @@ const Home = () => {
                       <span className="text-primary text-sm">{item.level}%</span>
                     </div>
                     <div className="w-full bg-slate-700 !rounded-full h-2">
-                      <div 
-                        className="bg-primary h-2 !rounded-full" 
+                      <div
+                        className="bg-primary h-2 !rounded-full"
                         style={{ width: `${item.level}%` }}
                       ></div>
                     </div>
@@ -342,17 +352,17 @@ const Home = () => {
       {/* Projects Section */}
       <section id="projects" className="py-20 bg-slate-800">
         <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16" data-aos="fade-up">
             <h2 className="text-4xl font-bold mb-4 text-primary">&lt; Dự án /&gt;</h2>
-            <div className="w-20 h-1 bg-secondary mx-auto"></div>
+            <div className="w-20 h-1 bg-[#00ff88] mx-auto"></div>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {projects.map((project, index) => (
-              <div key={index} className="project-card p-6 !rounded-lg">
+              <div key={index} className="project-card p-6 !rounded-lg" data-aos="fade-up" data-aos-delay={index * 100}>
                 <div className="mb-4 overflow-hidden !rounded-lg">
-                  <img 
-                    src={project.image} 
-                    alt={project.title} 
+                  <img
+                    src={project.image}
+                    alt={project.title}
                     className="w-full h-48 object-cover object-top hover:scale-105 transition-transform duration-300"
                   />
                 </div>
@@ -369,15 +379,11 @@ const Home = () => {
                 </div>
                 <div className="flex gap-3">
                   <button className="bg-primary text-slate-900 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors whitespace-nowrap flex items-center gap-2">
-                    <div className="w-4 h-4 flex items-center justify-center">
-                      <i className="ri-external-link-line"></i>
-                    </div>
+                    <LinkOutlined />
                     Demo
                   </button>
                   <button className="border border-secondary text-secondary px-4 py-2 rounded-lg text-sm font-semibold hover:bg-secondary hover:text-slate-900 transition-colors whitespace-nowrap flex items-center gap-2">
-                    <div className="w-4 h-4 flex items-center justify-center">
-                      <i className="ri-github-line"></i>
-                    </div>
+                    <GithubOutlined />
                     Code
                   </button>
                 </div>
@@ -390,47 +396,47 @@ const Home = () => {
       {/* Contact Section */}
       <section id="contact" className="py-20 code-bg">
         <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16" data-aos="fade-up">
             <h2 className="text-4xl font-bold mb-4 text-primary">&lt; Liên hệ /&gt;</h2>
-            <div className="w-20 h-1 bg-secondary mx-auto"></div>
-            <p className="text-slate-300 mt-6 max-w-2xl !mx-auto">
+            <div className="w-20 h-1 bg-[#00ff88] mx-auto"></div>
+            <p className="text-slate-300 !mt-6 max-w-2xl !mx-auto">
               Bạn có dự án thú vị? Hãy cùng tôi thảo luận và biến ý tưởng thành hiện thực!
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-12 max-w-6xl mx-auto">
             {/* Contact Form */}
-            <div className="terminal-border p-8 !rounded-lg bg-slate-900/50">
+            <div className="terminal-border p-8 !rounded-lg bg-slate-900/50" data-aos="fade-up" data-aos-delay="200">
               <h3 className="text-2xl font-semibold mb-6 text-secondary">Gửi tin nhắn</h3>
               <form className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium mb-2 text-slate-300">Họ và tên</label>
-                  <input 
-                    type="text" 
-                    className="w-full bg-slate-800 border border-slate-600 !rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none transition-colors text-sm" 
+                  <input
+                    type="text"
+                    className="w-full bg-slate-800 border border-slate-600 !rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none transition-colors text-sm"
                     placeholder="Nhập họ và tên của bạn"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2 text-slate-300">Email</label>
-                  <input 
-                    type="email" 
-                    className="w-full bg-slate-800 border border-slate-600 !rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none transition-colors text-sm" 
+                  <input
+                    type="email"
+                    className="w-full bg-slate-800 border border-slate-600 !rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none transition-colors text-sm"
                     placeholder="your.email@example.com"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2 text-slate-300">Chủ đề</label>
-                  <input 
-                    type="text" 
-                    className="w-full bg-slate-800 border border-slate-600 !rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none transition-colors text-sm" 
+                  <input
+                    type="text"
+                    className="w-full bg-slate-800 border border-slate-600 !rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none transition-colors text-sm"
                     placeholder="Chủ đề tin nhắn"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2 text-slate-300">Tin nhắn</label>
-                  <textarea 
-                    rows={5} 
-                    className="w-full bg-slate-800 border border-slate-600 !rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none transition-colors resize-none text-sm" 
+                  <textarea
+                    rows={5}
+                    className="w-full bg-slate-800 border border-slate-600 !rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none transition-colors resize-none text-sm"
                     placeholder="Nội dung tin nhắn của bạn..."
                   ></textarea>
                 </div>
@@ -441,13 +447,13 @@ const Home = () => {
             </div>
 
             {/* Contact Info */}
-            <div className="space-y-8">
+            <div className="space-y-8" data-aos="fade-up" data-aos-delay="400">
               <div className="skill-card p-6 !rounded-lg">
                 <h3 className="text-xl font-semibold mb-6 text-secondary">Thông tin liên hệ</h3>
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 flex items-center justify-center bg-primary/20 !rounded-lg">
-                      <i className="ri-mail-line text-primary text-xl"></i>
+                    <div className="w-12 h-12 flex items-center justify-center bg-primary/20 !rounded-lg text-primary text-xl">
+                      <MailOutlined />
                     </div>
                     <div>
                       <div className="text-sm text-slate-400">Email</div>
@@ -455,8 +461,8 @@ const Home = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 flex items-center justify-center bg-secondary/20 !rounded-lg">
-                      <i className="ri-phone-line text-secondary text-xl"></i>
+                    <div className="w-12 h-12 flex items-center justify-center bg-secondary/20 !rounded-lg text-secondary text-xl">
+                      <PhoneOutlined />
                     </div>
                     <div>
                       <div className="text-sm text-slate-400">Điện thoại</div>
@@ -464,8 +470,8 @@ const Home = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 flex items-center justify-center bg-blue-500/20 !rounded-lg">
-                      <i className="ri-map-pin-line text-blue-400 text-xl"></i>
+                    <div className="w-12 h-12 flex items-center justify-center bg-blue-500/20 !rounded-lg text-blue-400 text-xl">
+                      <EnvironmentOutlined />
                     </div>
                     <div>
                       <div className="text-sm text-slate-400">Địa chỉ</div>
@@ -478,20 +484,20 @@ const Home = () => {
               <div className="skill-card p-6 !rounded-lg">
                 <h3 className="text-xl font-semibold mb-6 text-secondary">Kết nối với tôi</h3>
                 <div className="flex gap-4">
-                  <a href="#" className="w-12 h-12 flex items-center justify-center bg-blue-600 hover:bg-blue-700 !rounded-lg transition-colors">
-                    <i className="ri-linkedin-fill text-white text-xl"></i>
+                  <a href="#" className="w-12 h-12 flex items-center justify-center bg-blue-600 hover:bg-blue-700 !rounded-lg transition-colors text-white text-xl">
+                    <LinkedinOutlined />
                   </a>
-                  <a href="#" className="w-12 h-12 flex items-center justify-center bg-gray-800 hover:bg-gray-700 !rounded-lg transition-colors">
-                    <i className="ri-github-fill text-white text-xl"></i>
+                  <a href="#" className="w-12 h-12 flex items-center justify-center bg-gray-800 hover:bg-gray-700 !rounded-lg transition-colors text-white text-xl">
+                    <GithubOutlined />
                   </a>
-                  <a href="#" className="w-12 h-12 flex items-center justify-center bg-blue-500 hover:bg-blue-600 !rounded-lg transition-colors">
-                    <i className="ri-facebook-fill text-white text-xl"></i>
+                  <a href="#" className="w-12 h-12 flex items-center justify-center bg-blue-500 hover:bg-blue-600 !rounded-lg transition-colors text-white text-xl">
+                    <FacebookOutlined />
                   </a>
-                  <a href="#" className="w-12 h-12 flex items-center justify-center bg-blue-400 hover:bg-blue-500 !rounded-lg transition-colors">
-                    <i className="ri-twitter-fill text-white text-xl"></i>
+                  <a href="#" className="w-12 h-12 flex items-center justify-center bg-blue-400 hover:bg-blue-500 !rounded-lg transition-colors text-white text-xl">
+                    <TwitterOutlined />
                   </a>
-                  <a href="#" className="w-12 h-12 flex items-center justify-center bg-pink-500 hover:bg-pink-600 !rounded-lg transition-colors">
-                    <i className="ri-instagram-fill text-white text-xl"></i>
+                  <a href="#" className="w-12 h-12 flex items-center justify-center bg-pink-500 hover:bg-pink-600 !rounded-lg transition-colors text-white text-xl">
+                    <InstagramOutlined />
                   </a>
                 </div>
               </div>
@@ -501,7 +507,7 @@ const Home = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-slate-400">Thứ 2 - Thứ 6</span>
-                    <span className="text-white">8:00 - 18:00</span>
+                    <span className="text-white">8:00 - 18:30</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Thứ 7, Chủ nhật</span>
