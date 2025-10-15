@@ -165,7 +165,7 @@ const Home = () => {
 
   return (
     <div className="App">
-      <ScrollToTop/>
+      <ScrollToTop />
       {/* Header Navigation */}
       <header className={`py-1.5 fixed top-0 w-full z-50 backdrop-blur-sm border-b border-slate-700 bg-slate-900/95 ${isMenuOpen ? 'bg-slate-900' : ''}`}>
         <nav className="container mx-auto px-6 py-4 flex items-center justify-between">
@@ -240,10 +240,10 @@ const Home = () => {
                 Đam mê công nghệ và luôn học hỏi những điều mới mẻ.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <button className="bg-primary text-slate-900 px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors whitespace-nowrap">
+                <button className="cursor-pointer bg-primary text-slate-900 px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors whitespace-nowrap">
                   Xem CV của tôi
                 </button>
-                <button className="border border-secondary text-secondary px-8 py-3 rounded-lg font-semibold hover:bg-secondary hover:text-slate-900 transition-colors whitespace-nowrap">
+                <button onClick={() => scrollToSection('contact')} className=" cursor-pointer border border-secondary text-secondary px-8 py-3 rounded-lg font-semibold hover:bg-secondary hover:text-slate-900 transition-colors whitespace-nowrap">
                   Liên hệ ngay
                 </button>
               </div>
