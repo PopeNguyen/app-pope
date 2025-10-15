@@ -15,7 +15,6 @@ import {
   message,
   Modal,
   Select,
-  Spin,
   Table,
   Radio,
   Row,
@@ -31,6 +30,7 @@ import dayjs from "dayjs";
 import { getCategoryBank } from "@/services/categoryBankService";
 import { Timestamp } from "firebase/firestore";
 import { PlusOutlined, EditOutlined, DeleteOutlined, DollarCircleOutlined, ArrowUpOutlined, ArrowDownOutlined } from "@ant-design/icons";
+import FullScreenLoader from '@/components/FullScreenLoader';
 
 const { RangePicker } = DatePicker;
 
@@ -174,9 +174,6 @@ const Money = () => {
     }
   };
 
-  if (loading) {
-    return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
-  }
   if (!isAuthenticated) {
     return <p className="text-center mt-4">Vui lòng đăng nhập để sử dụng chức năng này.</p>;
   }
@@ -227,54 +224,53 @@ const Money = () => {
   return (
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
       {contextHolder}
-      <Spin spinning={spinning} fullscreen={spinning}>
-        <div className="max-w-7xl mx-auto">
-          <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Bảng điều khiển tài chính</h1>
-            <div className="flex gap-2 flex-wrap">
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalVisible(true)}>
-                Thêm giao dịch
-              </Button>
-              <Button onClick={() => navigate(`/app-pope/account`)}>Quản lý tài khoản</Button>
-              <Button onClick={() => navigate(`/app-pope/category-bank`)}>Quản lý danh mục</Button>
-            </div>
-          </header>
+      <FullScreenLoader spinning={loading || spinning} />
+      <div className="max-w-7xl mx-auto">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Bảng điều khiển tài chính</h1>
+          <div className="flex gap-2 flex-wrap">
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalVisible(true)}>
+              Thêm giao dịch
+            </Button>
+            <Button onClick={() => navigate(`/app-pope/account`)}>Quản lý tài khoản</Button>
+            <Button onClick={() => navigate(`/app-pope/category-bank`)}>Quản lý danh mục</Button>
+          </div>
+        </header>
 
-          <Row gutter={[16, 16]} className="mb-6">
-            <Col xs={24} md={12} lg={8}><Card><Statistic title="Tổng thu nhập" value={totalIncome} precision={0} prefix={<ArrowUpOutlined />} valueStyle={{ color: '#3f8600' }} suffix="VND" formatter={(value) => value.toLocaleString('vi-VN')} /></Card></Col>
-            <Col xs={24} md={12} lg={8}><Card><Statistic title="Tổng chi phí" value={totalExpense} precision={0} prefix={<ArrowDownOutlined />} valueStyle={{ color: '#cf1322' }} suffix="VND" formatter={(value) => value.toLocaleString('vi-VN')} /></Card></Col>
-            <Col xs={24} md={12} lg={8}><Card><Statistic title="Lợi nhuận ròng" value={netIncome} precision={0} prefix={<DollarCircleOutlined />} valueStyle={{ color: netIncome >= 0 ? '#3f8600' : '#cf1322' }} suffix="VND" formatter={(value) => value.toLocaleString('vi-VN')} /></Card></Col>
-          </Row>
+        <Row gutter={[16, 16]} className="mb-6">
+          <Col xs={24} md={12} lg={8}><Card><Statistic title="Tổng thu nhập" value={totalIncome} precision={0} prefix={<ArrowUpOutlined />} valueStyle={{ color: '#3f8600' }} suffix="VND" formatter={(value) => value.toLocaleString('vi-VN')} /></Card></Col>
+          <Col xs={24} md={12} lg={8}><Card><Statistic title="Tổng chi phí" value={totalExpense} precision={0} prefix={<ArrowDownOutlined />} valueStyle={{ color: '#cf1322' }} suffix="VND" formatter={(value) => value.toLocaleString('vi-VN')} /></Card></Col>
+          <Col xs={24} md={12} lg={8}><Card><Statistic title="Lợi nhuận ròng" value={netIncome} precision={0} prefix={<DollarCircleOutlined />} valueStyle={{ color: netIncome >= 0 ? '#3f8600' : '#cf1322' }} suffix="VND" formatter={(value) => value.toLocaleString('vi-VN')} /></Card></Col>
+        </Row>
 
-          <Card>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <Radio.Group value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-                        <Radio.Button value="all">Tất cả</Radio.Button>
-                        <Radio.Button value="income">Thu nhập</Radio.Button>
-                        <Radio.Button value="expense">Chi phí</Radio.Button>
-                    </Radio.Group>
-                    <Radio.Group value={filterType} onChange={(e) => setFilterType(e.target.value)}>
-                        <Radio.Button value="date">Ngày</Radio.Button>
-                        <Radio.Button value="month">Tháng</Radio.Button>
-                        <Radio.Button value="range">Khoảng thời gian</Radio.Button>
-                    </Radio.Group>
-                </div>
-              <div className="flex gap-2 flex-wrap">
-                {filterType === 'date' && <DatePicker value={selectedDate} onChange={(date) => setSelectedDate(date)} />}
-                {filterType === 'month' && <DatePicker picker="month" value={selectedMonth} onChange={(date) => setSelectedMonth(date)} />}
-                {filterType === 'range' && <RangePicker value={dateRange} onChange={(dates) => setDateRange(dates)} />}
+        <Card>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                  <Radio.Group value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                      <Radio.Button value="all">Tất cả</Radio.Button>
+                      <Radio.Button value="income">Thu nhập</Radio.Button>
+                      <Radio.Button value="expense">Chi phí</Radio.Button>
+                  </Radio.Group>
+                  <Radio.Group value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+                      <Radio.Button value="date">Ngày</Radio.Button>
+                      <Radio.Button value="month">Tháng</Radio.Button>
+                      <Radio.Button value="range">Khoảng thời gian</Radio.Button>
+                  </Radio.Group>
               </div>
+            <div className="flex gap-2 flex-wrap">
+              {filterType === 'date' && <DatePicker value={selectedDate} onChange={(date) => setSelectedDate(date)} />}
+              {filterType === 'month' && <DatePicker picker="month" value={selectedMonth} onChange={(date) => setSelectedMonth(date)} />}
+              {filterType === 'range' && <RangePicker value={dateRange} onChange={(dates) => setDateRange(dates)} />}
             </div>
-            <Table columns={columns} dataSource={filteredTransactions} rowKey="id" size="small" bordered
-              scroll={{ x: 'max-content' }}
-              expandable={{
-                expandedRowRender: record => <p style={{ margin: 0 }}><b>Ghi chú:</b> {record.note || 'Không có'}</p>,
-              }}
-            />
-          </Card>
-        </div>
-      </Spin>
+          </div>
+          <Table columns={columns} dataSource={filteredTransactions} rowKey="id" size="small" bordered
+            scroll={{ x: 'max-content' }}
+            expandable={{
+              expandedRowRender: record => <p style={{ margin: 0 }}><b>Ghi chú:</b> {record.note || 'Không có'}</p>,
+            }}
+          />
+        </Card>
+      </div>
 
       <Modal
         title={isEdit ? "Cập nhật giao dịch" : "Thêm giao dịch"}

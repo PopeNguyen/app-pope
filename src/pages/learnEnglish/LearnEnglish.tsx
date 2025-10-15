@@ -4,6 +4,7 @@ import { getVocabularyLists, addVocabularyList, updateVocabularyList, deleteVoca
 import { useAuth } from '@/hooks/useAuth';
 import { Layout, Typography, Form, Input, Button, List, Card, Modal, Col, Row, Space, DatePicker, Popover, Tooltip } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import FullScreenLoader from '@/components/FullScreenLoader';
 import moment from 'moment';
 
 const { Content } = Layout;
@@ -15,13 +16,18 @@ const LearnEnglish = () => {
   const [editingList, setEditingList] = useState<any>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
+      setLoading(true);
       const unsubscribe = getVocabularyLists(user.uid, (fetchedLists) => {
         setLists(fetchedLists);
+        setLoading(false);
       });
       return () => unsubscribe();
+    } else {
+      setLoading(false);
     }
   }, [user]);
 
@@ -97,6 +103,7 @@ const LearnEnglish = () => {
 
   return (
     <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
+      <FullScreenLoader spinning={loading} />
       <Content style={{ padding: '24px' }}>
         <Row justify="center">
           <Col xs={24} sm={22} md={20} lg={18} xl={16}>

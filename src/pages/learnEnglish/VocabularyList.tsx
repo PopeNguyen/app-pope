@@ -4,6 +4,7 @@ import { getWords, addWord, updateWord, deleteWords, updateWordStats } from '@/s
 import { useAuth } from '@/hooks/useAuth';
 import { Layout, Typography, Form, Input, Button, List, Card, Modal, Checkbox, Row, Col, Radio, Badge, Tooltip, Space, Alert } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SaveOutlined, ReadOutlined, CreditCardOutlined, UnorderedListOutlined, ArrowLeftOutlined, SoundOutlined, FormOutlined, AppstoreOutlined } from '@ant-design/icons';
+import FullScreenLoader from '@/components/FullScreenLoader';
 import FlashcardMode from '@/components/learnEnglish/FlashcardMode';
 import LearnMode from '@/components/learnEnglish/LearnMode';
 
@@ -24,13 +25,18 @@ const VocabularyList = () => {
   const [isLearnModeModalVisible, setIsLearnModeModalVisible] = useState(false);
   const [addForm] = Form.useForm();
   const [editForm] = Form.useForm();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user && listId) {
+      setLoading(true);
       const unsubscribe = getWords(user.uid, listId, (fetchedWords) => {
         setWords(fetchedWords);
+        setLoading(false);
       });
       return () => unsubscribe();
+    } else {
+      setLoading(false);
     }
   }, [user, listId]);
 
@@ -172,6 +178,7 @@ const VocabularyList = () => {
 
   return (
     <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
+      <FullScreenLoader spinning={loading} />
       <Content style={{ padding: '24px' }}>
         <Row justify="center">
           <Col xs={24} sm={22} md={20} lg={18} xl={16}>

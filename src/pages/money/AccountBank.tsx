@@ -17,10 +17,10 @@ import {
   Modal,
   Popconfirm,
   Row,
-  Spin,
 } from "antd";
 import { useEffect, useState } from "react";
 import { PlusOutlined, EditOutlined, DeleteOutlined, ArrowLeftOutlined } from "@ant-design/icons";
+import FullScreenLoader from '@/components/FullScreenLoader';
 import { useNavigate } from "react-router-dom";
 
 const AccountBank = () => {
@@ -103,9 +103,6 @@ const AccountBank = () => {
     });
   };
 
-  if (loading) {
-    return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
-  }
   if (!isAuthenticated) {
     return <p className="text-center mt-4">Vui lòng đăng nhập để sử dụng chức năng này.</p>;
   }
@@ -113,6 +110,7 @@ const AccountBank = () => {
   return (
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
       {contextHolder}
+      <FullScreenLoader spinning={loading || spinning} />
       <div className="max-w-4xl mx-auto">
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
@@ -124,39 +122,37 @@ const AccountBank = () => {
           </Button>
         </header>
 
-        <Spin spinning={spinning}>
-          <List
-            grid={{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 3, xl: 3 }}
-            dataSource={listBank}
-            renderItem={(item) => (
-              <List.Item>
-                <Card
-                  hoverable
-                  actions={[
-                    <EditOutlined key="edit" onClick={() => onEdit(item)} />,
-                    <Popconfirm
-                      title="Bạn có chắc chắn muốn xóa?"
-                      onConfirm={() => onDelete(item)}
-                      okText="Có"
-                      cancelText="Không"
-                    >
-                      <DeleteOutlined key="delete" />
-                    </Popconfirm>,
-                  ]}
-                >
-                  <Card.Meta
-                    title={<span className="font-semibold text-lg">{item.nameBank}</span>}
-                    description={
-                      <span className="text-green-600 font-medium text-xl">
-                        {Number(item.amount || 0).toLocaleString("vi-VN", { style: "currency", currency: "VND" })}
-                      </span>
-                    }
-                  />
-                </Card>
-              </List.Item>
-            )}
-          />
-        </Spin>
+        <List
+          grid={{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 3, xl: 3 }}
+          dataSource={listBank}
+          renderItem={(item) => (
+            <List.Item>
+              <Card
+                hoverable
+                actions={[
+                  <EditOutlined key="edit" onClick={() => onEdit(item)} />,
+                  <Popconfirm
+                    title="Bạn có chắc chắn muốn xóa?"
+                    onConfirm={() => onDelete(item)}
+                    okText="Có"
+                    cancelText="Không"
+                  >
+                    <DeleteOutlined key="delete" />
+                  </Popconfirm>,
+                ]}
+              >
+                <Card.Meta
+                  title={<span className="font-semibold text-lg">{item.nameBank}</span>}
+                  description={
+                    <span className="text-green-600 font-medium text-xl">
+                      {Number(item.amount || 0).toLocaleString("vi-VN", { style: "currency", currency: "VND" })}
+                    </span>
+                  }
+                />
+              </Card>
+            </List.Item>
+          )}
+        />
       </div>
 
       <Modal

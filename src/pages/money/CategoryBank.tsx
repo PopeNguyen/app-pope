@@ -13,13 +13,13 @@ import {
   message,
   Modal,
   Popconfirm,
-  Spin,
   Select,
   Tag
 } from "antd";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PlusOutlined, EditOutlined, DeleteOutlined, ArrowLeftOutlined } from "@ant-design/icons";
+import FullScreenLoader from '@/components/FullScreenLoader';
 
 const CategoryBank = () => {
   const navigate = useNavigate();
@@ -101,9 +101,6 @@ const CategoryBank = () => {
     });
   };
 
-  if (loading) {
-    return <div className="flex justify-center items-center h-screen"><Spin size="large" /></div>;
-  }
   if (!isAuthenticated) {
     return <p className="text-center mt-4">Vui lòng đăng nhập để sử dụng chức năng này.</p>;
   }
@@ -111,6 +108,7 @@ const CategoryBank = () => {
   return (
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
       {contextHolder}
+      <FullScreenLoader spinning={loading || spinning} />
       <div className="max-w-2xl mx-auto">
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
@@ -122,34 +120,32 @@ const CategoryBank = () => {
             </Button>
         </header>
 
-        <Spin spinning={spinning}>
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-                <List
-                    itemLayout="horizontal"
-                    dataSource={categoryBank}
-                    renderItem={(item) => (
-                        <List.Item
-                            actions={[
-                                <Button type="text" icon={<EditOutlined />} onClick={() => onEdit(item)} />,
-                                <Popconfirm
-                                    title="Bạn có chắc chắn muốn xóa?"
-                                    onConfirm={() => onDelete(item)}
-                                    okText="Có"
-                                    cancelText="Không"
-                                >
-                                    <Button type="text" danger icon={<DeleteOutlined />} />
-                                </Popconfirm>,
-                            ]}
-                        >
-                            <List.Item.Meta
-                                title={<span className="font-semibold">{item.nameCategory}</span>}
-                                description={<Tag color={item.type === 'income' ? 'green' : 'red'}>{item.type === 'income' ? 'Thu nhập' : 'Chi phí'}</Tag>}
-                            />
-                        </List.Item>
-                    )}
-                />
-            </div>
-        </Spin>
+        <div className="bg-white p-4 rounded-lg shadow-sm">
+            <List
+                itemLayout="horizontal"
+                dataSource={categoryBank}
+                renderItem={(item) => (
+                    <List.Item
+                        actions={[
+                            <Button type="text" icon={<EditOutlined />} onClick={() => onEdit(item)} />,
+                            <Popconfirm
+                                title="Bạn có chắc chắn muốn xóa?"
+                                onConfirm={() => onDelete(item)}
+                                okText="Có"
+                                cancelText="Không"
+                            >
+                                <Button type="text" danger icon={<DeleteOutlined />} />
+                            </Popconfirm>,
+                        ]}
+                    >
+                        <List.Item.Meta
+                            title={<span className="font-semibold">{item.nameCategory}</span>}
+                            description={<Tag color={item.type === 'income' ? 'green' : 'red'}>{item.type === 'income' ? 'Thu nhập' : 'Chi phí'}</Tag>}
+                        />
+                    </List.Item>
+                )}
+            />
+        </div>
       </div>
 
       <Modal

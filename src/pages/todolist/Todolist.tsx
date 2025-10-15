@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { getTodos, addTodo, deleteTodo, updateTodo } from "@/services/todoService";
 import type { Todo, TodoStatus, TodoPriority } from "@/services/todoService";
-import { Button, Modal, Form, Input, Select, DatePicker, message, Spin, Card, Tag, Popconfirm } from "antd";
+import { Button, Modal, Form, Input, Select, DatePicker, message, Card, Tag, Popconfirm } from "antd";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import type { DropResult } from "@hello-pangea/dnd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import FullScreenLoader from '@/components/FullScreenLoader';
 import dayjs from "dayjs";
 import { Timestamp } from "firebase/firestore";
 
@@ -195,7 +196,7 @@ function TodoList() {
   }
 
   if (authLoading || loading || !board) {
-    return <div className="flex justify-center items-center h-full"><Spin size="large" /></div>;
+    return <FullScreenLoader spinning={true} />;
   }
 
   return (
