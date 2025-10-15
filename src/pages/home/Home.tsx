@@ -5,16 +5,80 @@ import background from '@/assets/img/background_home.jpg';
 import avatar from '@/assets/img/avatar.png';
 import logo from '@/assets/img/logo_full.png';
 import { useNavigate } from 'react-router-dom';
-import { MenuOutlined, CodeOutlined, DatabaseOutlined, HddOutlined, ToolOutlined, HighlightOutlined, MobileOutlined, GithubOutlined, LinkOutlined, MailOutlined, PhoneOutlined, EnvironmentOutlined, LinkedinOutlined, FacebookOutlined, TwitterOutlined, InstagramOutlined } from '@ant-design/icons';
+import { MenuOutlined, CodeOutlined, DatabaseOutlined, HddOutlined, ToolOutlined, HighlightOutlined, MobileOutlined, GithubOutlined, LinkOutlined, MailOutlined, PhoneOutlined, EnvironmentOutlined, LinkedinOutlined, FacebookOutlined, TwitterOutlined, InstagramOutlined, } from '@ant-design/icons';
+import { notification } from 'antd';
 import ScrollToTop from '@/components/ScrollToTop';
 
 import AOS from 'aos';
+import { sendMessage } from '@/services/telegramService';
 import 'aos/dist/aos.css';
 
 const Home = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    subject: '',
+    message: '',
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const [loading, setLoading] = useState(false);
+  const [api, contextHolder] = notification.useNotification();
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const { name, email, subject, message } = formData;
+
+    if (!name.trim()) {
+      api.error({ message: 'Lỗi', description: 'Vui lòng nhập họ và tên.' });
+      return;
+    }
+    if (!email.trim()) {
+      api.error({ message: 'Lỗi', description: 'Vui lòng nhập email.' });
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      api.error({ message: 'Lỗi', description: 'Vui lòng nhập một địa chỉ email hợp lệ.' });
+      return;
+    }
+    if (!subject.trim()) {
+      api.error({ message: 'Lỗi', description: 'Vui lòng nhập chủ đề.' });
+      return;
+    }
+    if (!message.trim()) {
+      api.error({ message: 'Lỗi', description: 'Vui lòng nhập tin nhắn.' });
+      return;
+    }
+
+    setLoading(true);
+    const success = await sendMessage(formData);
+    setLoading(false);
+
+    if (success) {
+      api.success({
+        message: 'Thành công',
+        description: 'Tin nhắn của bạn đã được gửi thành công!',
+      });
+      setFormData({
+        name: '',
+        email: '',
+        subject: '',
+        message: '',
+      });
+    } else {
+      api.error({
+        message: 'Lỗi',
+        description: 'Không thể gửi tin nhắn. Vui lòng thử lại sau.',
+      });
+    }
+  };
 
   useEffect(() => {
     AOS.init({ duration: 1000, once: true });
@@ -165,7 +229,8 @@ const Home = () => {
 
   return (
     <div className="App">
-      <ScrollToTop />
+      {contextHolder}
+      <ScrollToTop/>
       {/* Header Navigation */}
       <header className={`py-1.5 fixed top-0 w-full z-50 backdrop-blur-sm border-b border-slate-700 bg-slate-900/95 ${isMenuOpen ? 'bg-slate-900' : ''}`}>
         <nav className="container mx-auto px-6 py-4 flex items-center justify-between">
@@ -407,11 +472,14 @@ const Home = () => {
             {/* Contact Form */}
             <div className="terminal-border p-8 !rounded-lg bg-slate-900/50" data-aos="fade-up" data-aos-delay="200">
               <h3 className="text-2xl font-semibold mb-6 text-secondary">Gửi tin nhắn</h3>
-              <form className="space-y-6">
+              <form className="space-y-6" onSubmit={handleSubmit}>
                 <div>
                   <label className="block text-sm font-medium mb-2 text-slate-300">Họ và tên</label>
                   <input
                     type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
                     className="w-full bg-slate-800 border border-slate-600 !rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none transition-colors text-sm"
                     placeholder="Nhập họ và tên của bạn"
                   />
@@ -420,6 +488,9 @@ const Home = () => {
                   <label className="block text-sm font-medium mb-2 text-slate-300">Email</label>
                   <input
                     type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
                     className="w-full bg-slate-800 border border-slate-600 !rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none transition-colors text-sm"
                     placeholder="your.email@example.com"
                   />
@@ -428,6 +499,9 @@ const Home = () => {
                   <label className="block text-sm font-medium mb-2 text-slate-300">Chủ đề</label>
                   <input
                     type="text"
+                    name="subject"
+                    value={formData.subject}
+                    onChange={handleChange}
                     className="w-full bg-slate-800 border border-slate-600 !rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none transition-colors text-sm"
                     placeholder="Chủ đề tin nhắn"
                   />
@@ -436,12 +510,15 @@ const Home = () => {
                   <label className="block text-sm font-medium mb-2 text-slate-300">Tin nhắn</label>
                   <textarea
                     rows={5}
+                    name="message"
+                    value={formData.message}
+                    onChange={handleChange}
                     className="w-full bg-slate-800 border border-slate-600 !rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none transition-colors resize-none text-sm"
                     placeholder="Nội dung tin nhắn của bạn..."
                   ></textarea>
                 </div>
-                <button type="submit" className="w-full bg-primary text-slate-900 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors whitespace-nowrap">
-                  Gửi tin nhắn
+                <button type="submit" disabled={loading} className="cursor-pointer w-full bg-primary text-slate-900 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors whitespace-nowrap disabled:opacity-50">
+                  {loading ? 'Đang gửi...' : 'Gửi tin nhắn'}
                 </button>
               </form>
             </div>
@@ -484,20 +561,14 @@ const Home = () => {
               <div className="skill-card p-6 !rounded-lg">
                 <h3 className="text-xl font-semibold mb-6 text-secondary">Kết nối với tôi</h3>
                 <div className="flex gap-4">
-                  <a href="#" className="w-12 h-12 flex items-center justify-center bg-blue-600 hover:bg-blue-700 !rounded-lg transition-colors text-white text-xl">
+                  <a href={import.meta.env.VITE_LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center bg-blue-600 hover:bg-blue-700 !rounded-lg transition-colors text-white text-xl">
                     <LinkedinOutlined />
                   </a>
-                  <a href="#" className="w-12 h-12 flex items-center justify-center bg-gray-800 hover:bg-gray-700 !rounded-lg transition-colors text-white text-xl">
+                  <a href={import.meta.env.VITE_GITHUB_URL} target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center bg-gray-800 hover:bg-gray-700 !rounded-lg transition-colors text-white text-xl">
                     <GithubOutlined />
                   </a>
-                  <a href="#" className="w-12 h-12 flex items-center justify-center bg-blue-500 hover:bg-blue-600 !rounded-lg transition-colors text-white text-xl">
+                  <a href={import.meta.env.VITE_FACEBOOK_URL} target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center bg-blue-500 hover:bg-blue-600 !rounded-lg transition-colors text-white text-xl">
                     <FacebookOutlined />
-                  </a>
-                  <a href="#" className="w-12 h-12 flex items-center justify-center bg-blue-400 hover:bg-blue-500 !rounded-lg transition-colors text-white text-xl">
-                    <TwitterOutlined />
-                  </a>
-                  <a href="#" className="w-12 h-12 flex items-center justify-center bg-pink-500 hover:bg-pink-600 !rounded-lg transition-colors text-white text-xl">
-                    <InstagramOutlined />
                   </a>
                 </div>
               </div>
