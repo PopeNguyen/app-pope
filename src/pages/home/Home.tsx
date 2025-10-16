@@ -243,7 +243,7 @@ const Home = () => {
             <img
               src={logo}
               alt="Logo"
-              className="w-[100px] h-full invert object-cover object-center"
+              className="w-[60px] md:w-[100px] h-full invert object-cover object-center"
             />
           </div>
           <div className="hidden md:flex gap-10">
