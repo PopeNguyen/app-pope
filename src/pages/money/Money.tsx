@@ -4,6 +4,7 @@ import {
   deleteListTransaction,
   getListBank,
   getListTransaction,
+  updateListBank,
   updateListTransaction,
 } from "@/services/moneyService";
 import {
@@ -52,6 +53,8 @@ const Money = () => {
   const [isEdit, setIsEdit] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any>(null);
   const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'income', or 'expense'
+  const [transactionType, setTransactionType] = useState('expense');
+
 
   const callApiGetListTransaction = async () => {
     if (!user) return;
@@ -123,23 +126,65 @@ const Money = () => {
   const handleOk = () => {
     form.validateFields().then(async (values) => {
       if (!user) return;
+
       const dataApi = {
         ...values,
+        note: values.note || null,
         date: Timestamp.fromDate(values.date.toDate()),
         uid: user.uid,
       };
+
       setSpinning(true);
       try {
         if (isEdit && editingRecord) {
+          const newAmount = Number(values.amount) || 0;
+          const originalBank = listBank.find(b => b.nameBank === editingRecord.nameBank);
+          const newBank = listBank.find(b => b.nameBank === values.nameBank);
+
+          if (originalBank && newBank) {
+            const oldAmount = Number(editingRecord.amount) || 0;
+            const oldType = editingRecord.type;
+            const currentBankAmount = Number(originalBank.amount) || 0;
+
+            if (originalBank.id === newBank.id) {
+              const oldNumericAmount = oldType === 'income' ? oldAmount : -oldAmount;
+              const newNumericAmount = values.type === 'income' ? newAmount : -newAmount;
+              const adjustment = newNumericAmount - oldNumericAmount;
+              const finalBalance = currentBankAmount + adjustment;
+              await updateListBank({ ...originalBank, amount: finalBalance });
+            } else {
+              const newBankAmount = Number(newBank.amount) || 0;
+              // Revert from original bank
+              const originalBankBalance = currentBankAmount + (oldType === 'income' ? -oldAmount : oldAmount);
+              await updateListBank({ ...originalBank, amount: originalBankBalance });
+
+              // Apply to new bank
+              const newBankBalance = newBankAmount + (values.type === 'income' ? newAmount : -newAmount);
+              await updateListBank({ ...newBank, amount: newBankBalance });
+            }
+          }
+          
           await updateListTransaction({ ...dataApi, id: editingRecord.id });
           messageApi.success("Cập nhật giao dịch thành công!");
+
         } else {
+          const amount = Number(values.amount) || 0;
           await addListTransaction(dataApi);
+          const selectedBank = listBank.find(b => b.nameBank === values.nameBank);
+
+          if (selectedBank) {
+            const currentBalance = Number(selectedBank.amount) || 0;
+            const newBalance = values.type === 'income' 
+              ? currentBalance + amount 
+              : currentBalance - amount;
+            await updateListBank({ ...selectedBank, amount: newBalance });
+          }
           messageApi.success("Thêm giao dịch thành công!");
         }
         handleCancel();
         callApiGetListTransaction();
       } catch (error) {
+        console.error("Transaction failed: ", error);
         messageApi.error("Thao tác thất bại!");
       } finally {
         setSpinning(false);
@@ -162,17 +207,33 @@ const Money = () => {
   };
 
   const onDelete = async (record: any) => {
+    if (!user) return;
     setSpinning(true);
     try {
+      const selectedBank = listBank.find(b => b.nameBank === record.nameBank);
+      if (selectedBank) {
+        const currentBalance = Number(selectedBank.amount) || 0;
+        const transactionAmount = Number(record.amount) || 0;
+        const newBalance = record.type === 'income'
+          ? currentBalance - transactionAmount
+          : currentBalance + transactionAmount;
+        await updateListBank({ ...selectedBank, amount: newBalance });
+      }
+
       await deleteListTransaction(record.id);
       messageApi.success("Xóa giao dịch thành công!");
       callApiGetListTransaction();
     } catch (error) {
+      console.error("Delete failed: ", error);
       messageApi.error("Xóa giao dịch thất bại!");
     } finally {
       setSpinning(false);
     }
   };
+
+  const filteredCategories = useMemo(() => {
+    return listCategory.filter(c => c.type === transactionType);
+  }, [listCategory, transactionType]);
 
   if (!isAuthenticated) {
     return <p className="text-center mt-4">Vui lòng đăng nhập để sử dụng chức năng này.</p>;
@@ -283,7 +344,10 @@ const Money = () => {
       >
         <Form form={form} layout="vertical" name="transaction_form" initialValues={{ type: 'expense', date: dayjs() }}>
           <Form.Item name="type" label="Loại giao dịch" rules={[{ required: true }]}>
-            <Select placeholder="Chọn loại giao dịch">
+          <Select
+              placeholder="Chọn loại giao dịch"
+              onChange={(value) => setTransactionType(value)}
+            >
               <Select.Option value="expense">Chi phí</Select.Option>
               <Select.Option value="income">Thu nhập</Select.Option>
             </Select>
@@ -292,8 +356,8 @@ const Money = () => {
             <InputNumber className="w-full" formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")} parser={(value) => value!.replace(/\$\s?|(,*)/g, "")} />
           </Form.Item>
           <Form.Item name="nameCategory" label="Danh mục" rules={[{ required: true }]}>
-            <Select placeholder="Chọn danh mục">
-              {listCategory.filter(c => c.type === form.getFieldValue('type')).map((cat: any) => (
+          <Select placeholder="Chọn danh mục">
+              {filteredCategories.map((cat: any) => (
                 <Select.Option key={cat.id} value={cat.nameCategory}>{cat.nameCategory}</Select.Option>
               ))}
             </Select>
