@@ -106,7 +106,7 @@ const LearnEnglish = () => {
       <FullScreenLoader spinning={loading} />
       <Content style={{ padding: '24px' }}>
         <Row justify="center">
-          <Col xs={24} sm={22} md={20} lg={18} xl={16}>
+          <Col xs={24} xl={24}>
             <div style={{ textAlign: 'center', marginBottom: '40px' }}>
               <Title level={1} style={{ color: '#1890ff' }}>Vocabulary Lists</Title>
               <Paragraph type="secondary">Manage your vocabulary lists and review schedules.</Paragraph>

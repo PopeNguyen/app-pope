@@ -107,6 +107,11 @@ const Home = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const gotoCV = () => {
+    window.open('https://www.topcv.vn/xem-cv/VFwBUA9RVlwJA1UHXQAJBgxdVFYPUgxSV1oEBg23f6', '_blank');
+  };
+
+
   const scrollToSection = (sectionId: any) => {
     if (sectionId === 'app') {
       navigate(`/app-pope/todolist`)
@@ -125,102 +130,102 @@ const Home = () => {
       icon: <CodeOutlined />,
       items: [
         { name: 'HTML5 & CSS3', level: 95 },
-        { name: 'JavaScript & TypeScript', level: 90 },
-        { name: 'React & Vue.js', level: 88 }
+        { name: 'React', level: 80 },
+        { name: 'Vue.js', level: 90 }
       ]
     },
     {
       category: 'Backend',
       icon: <DatabaseOutlined />,
       items: [
-        { name: 'Node.js & Express', level: 85 },
-        { name: 'Python & Django', level: 80 },
-        { name: 'PHP & Laravel', level: 75 }
+        { name: 'Node.js', level: 40 },
+        { name: 'PHP', level: 10 },
+        // { name: 'PHP & Laravel', level: 75 }
       ]
     },
     {
       category: 'Database',
       icon: <HddOutlined />,
       items: [
-        { name: 'MySQL & PostgreSQL', level: 85 },
-        { name: 'MongoDB', level: 80 },
-        { name: 'Redis & Firebase', level: 70 }
+        { name: 'MySQL', level: 50 },
+        { name: 'MongoDB', level: 40 },
+        { name: 'Firebase', level: 45 }
       ]
     },
     {
       category: 'Tools & DevOps',
       icon: <ToolOutlined />,
       items: [
-        { name: 'Git & GitHub', level: 95 },
-        { name: 'Docker & AWS', level: 75 },
-        { name: 'Linux & CI/CD', level: 70 }
+        { name: 'Git & GitHub', level: 90 },
+        { name: 'Docker', level: 10 },
+        // { name: 'Linux & CI/CD', level: 70 }
       ]
     },
     {
       category: 'Design',
       icon: <HighlightOutlined />,
       items: [
-        { name: 'UI/UX Design', level: 85 },
-        { name: 'Figma & Adobe XD', level: 80 },
-        { name: 'Photoshop & Illustrator', level: 70 }
+        { name: 'Figma', level: 60 },
+        { name: 'Adobe XD', level: 15 },
+        { name: 'Photoshop & Illustrator', level: 20 }
       ]
     },
     {
       category: 'Mobile',
       icon: <MobileOutlined />,
       items: [
-        { name: 'React Native', level: 75 },
-        { name: 'Flutter', level: 65 },
-        { name: 'Progressive Web Apps', level: 80 }
+        { name: 'React Native', level: 30 },
+        // { name: 'Flutter', level: 65 },
+        // { name: 'Progressive Web Apps', level: 80 }
       ]
     }
   ];
 
   const projects = [
     {
-      title: 'E-commerce Platform',
-      description: 'Nền tảng thương mại điện tử hoàn chỉnh với quản lý sản phẩm, giỏ hàng, thanh toán và dashboard admin. Sử dụng React, Node.js và MongoDB.',
-      tags: ['React', 'Node.js', 'MongoDB', 'Stripe'],
+      title: 'LPBI insurance',
+      description: 'Dự án phát triển hệ thống quản lý bảo hiểm theo yêu cầu của đối tác, bao gồm các tính năng quản lý bảo hiểm, hoa hồng, khách hàng, ...',
+      tags: ['React', 'Typescript', 'Git'],
       image: 'https://readdy.ai/api/search-image?query=modern%20e-commerce%20website%20interface%20clean%20design%20product%20showcase%20shopping%20cart%20responsive%20layout%20professional%20online%20store%20user%20friendly%20interface%20contemporary%20web%20design%20minimalist%20style&width=400&height=250&seq=project1&orientation=landscape',
       demo: '#',
       code: '#'
     },
     {
-      title: 'Task Management App',
-      description: 'Ứng dụng quản lý công việc với Kanban board, real-time collaboration, notifications và báo cáo tiến độ. Hỗ trợ làm việc nhóm hiệu quả.',
-      tags: ['Vue.js', 'Laravel', 'MySQL', 'Socket.io'],
+      title: 'BIOPORT',
+      description: 'Dự án BIOPORT là ứng dụng web hỗ trợ tư vấn y tế từ xa, cho phép bác sĩ khám và kê đơn trực tuyến, người dùng thanh toán online. Phát triển giao diện Admin và User bằng VueJS, ReactJS, tích hợp API, phân quyền và cập nhật theo yêu cầu khách hàng Nhật Bản.',
+      tags: ['Vue.js', 'Reactjs', 'Socket.io'],
       image: 'https://readdy.ai/api/search-image?query=task%20management%20application%20dashboard%20kanban%20board%20project%20tracking%20team%20collaboration%20interface%20productivity%20tool%20modern%20ui%20clean%20layout%20professional%20workspace%20management%20system&width=400&height=250&seq=project2&orientation=landscape',
       demo: '#',
       code: '#'
     },
     {
-      title: 'Social Media Platform',
-      description: 'Mạng xã hội với tính năng đăng bài, comment, like, follow, chat real-time và story. Thiết kế responsive và tối ưu hiệu suất cao.',
-      tags: ['Next.js', 'Express', 'PostgreSQL', 'Redis'],
+      title: 'Web thiết bị Thiên Hoàng Hải',
+      description: 'Phát triển website giới thiệu và bán thiết bị theo thiết kế, tối ưu hiển thị trên mọi thiết bị và chuẩn SEO. Sử dụng NextJS, RestAPI, tích hợp API và thiết lập router động cho nội dung linh hoạt.',
+      tags: ['Nextjs', 'RestAPI'],
       image: 'https://readdy.ai/api/search-image?query=social%20media%20platform%20interface%20news%20feed%20user%20profiles%20messaging%20system%20modern%20social%20network%20design%20community%20platform%20interactive%20ui%20contemporary%20social%20app%20layout&width=400&height=250&seq=project3&orientation=landscape',
       demo: '#',
       code: '#'
     },
     {
-      title: 'Learning Management System',
-      description: 'Hệ thống quản lý học tập trực tuyến với video streaming, quiz, assignment, progress tracking và certificate. Hỗ trợ multiple roles.',
-      tags: ['React', 'Django', 'PostgreSQL', 'AWS S3'],
+      title: 'Hotel management platform',
+      description: 'Dự án nền tảng quản lý khách sạn được phát triển nội bộ, hỗ trợ quản lý phòng, thẻ, khu vực, hóa đơn và thanh toán. Sử dụng VueJS, RestAPI và Socket để xây dựng giao diện, phân quyền theo vai trò và kết nối phần mềm khóa thông minh cho xử lý dữ liệu thẻ.',
+      tags: ['Vuejs', 'Socket'],
       image: 'https://readdy.ai/api/search-image?query=learning%20management%20system%20online%20education%20platform%20course%20dashboard%20student%20interface%20e-learning%20website%20educational%20technology%20modern%20lms%20design%20academic%20portal&width=400&height=250&seq=project4&orientation=landscape',
       demo: '#',
       code: '#'
     },
     {
-      title: 'Weather Forecast App',
-      description: 'Ứng dụng dự báo thời tiết với geolocation, 7-day forecast, weather maps, alerts và beautiful animations. Progressive Web App.',
-      tags: ['React Native', 'TypeScript', 'OpenWeather API', 'PWA'],
+      title: 'Ytool',
+      description: 'Ứng dụng hỗ trợ lấy và gợi ý tag từ video YouTube nhằm tăng khả năng tiếp cận. Phát triển giao diện theo Figma, tích hợp API YouTube bằng React Native, Redux và RestAPI.',
+      tags: ['React Native', 'Redux', 'RestAPI'],
       image: 'https://readdy.ai/api/search-image?query=weather%20application%20interface%20forecast%20dashboard%20meteorology%20app%20climate%20data%20visualization%20weather%20widget%20modern%20weather%20ui%20atmospheric%20conditions%20mobile%20weather%20app&width=400&height=250&seq=project5&orientation=landscape',
       demo: '#',
       code: '#'
     },
     {
-      title: 'Crypto Trading Platform',
-      description: 'Nền tảng giao dịch cryptocurrency với real-time charts, portfolio tracking, news feed và advanced trading tools. Tích hợp multiple exchanges.',
-      tags: ['Vue.js', 'FastAPI', 'Redis', 'WebSocket'],
+      title: 'Coin trading website',
+      description: 'Dự án website giao dịch coin được phát triển fullstack, hỗ trợ giao dịch và quản lý người dùng, admin, coin, và đơn hàng theo thời gian thực. Sử dụng VueJS, NodeJS, MongoDB, socket, VietQR, và Telegram bot để tích hợp thanh toán, bảo mật và thông báo giao dịch tự động.',
+      tags: ['Vuejs', 'Nodejs', 'MongoDB', 'socket', 'VietQR', 'Telegram bot'],
       image: 'https://readdy.ai/api/search-image?query=cryptocurrency%20trading%20platform%20dashboard%20bitcoin%20exchange%20interface%20financial%20charts%20crypto%20wallet%20blockchain%20technology%20trading%20interface%20digital%20currency%20market%20analysis&width=400&height=250&seq=project6&orientation=landscape',
       demo: '#',
       code: '#'
@@ -230,7 +235,7 @@ const Home = () => {
   return (
     <div className="App">
       {contextHolder}
-      <ScrollToTop/>
+      <ScrollToTop />
       {/* Header Navigation */}
       <header className={`py-1.5 fixed top-0 w-full z-50 backdrop-blur-sm border-b border-slate-700 bg-slate-900/95 ${isMenuOpen ? 'bg-slate-900' : ''}`}>
         <nav className="container mx-auto px-6 py-4 flex items-center justify-between">
@@ -305,7 +310,7 @@ const Home = () => {
                 Đam mê công nghệ và luôn học hỏi những điều mới mẻ.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <button className="cursor-pointer bg-primary text-slate-900 px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors whitespace-nowrap">
+                <button onClick={gotoCV} className="cursor-pointer bg-primary text-slate-900 px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors whitespace-nowrap">
                   Xem CV của tôi
                 </button>
                 <button onClick={() => scrollToSection('contact')} className=" cursor-pointer border border-secondary text-secondary px-8 py-3 rounded-lg font-semibold hover:bg-secondary hover:text-slate-900 transition-colors whitespace-nowrap">
@@ -355,8 +360,8 @@ const Home = () => {
                   <span className="text-slate-300">Nguyễn Trung Phong</span>
                 </div>
                 <div className="flex">
-                  <span className="text-primary w-24">Age:</span>
-                  <span className="text-slate-300">26 tuổi</span>
+                  <span className="text-primary w-24">Dob:</span>
+                  <span className="text-slate-300">10/08/1999</span>
                 </div>
                 <div className="flex">
                   <span className="text-primary w-24">Location:</span>
@@ -442,7 +447,7 @@ const Home = () => {
                     </span>
                   ))}
                 </div>
-                <div className="flex gap-3">
+                {/* <div className="flex gap-3">
                   <button className="bg-primary text-slate-900 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors whitespace-nowrap flex items-center gap-2">
                     <LinkOutlined />
                     Demo
@@ -451,7 +456,7 @@ const Home = () => {
                     <GithubOutlined />
                     Code
                   </button>
-                </div>
+                </div> */}
               </div>
             ))}
           </div>

@@ -177,7 +177,7 @@ const VocabularyList = () => {
       <FullScreenLoader spinning={loading} />
       <Content style={{ padding: '24px' }}>
         <Row justify="center">
-          <Col xs={24} sm={22} md={20} lg={18} xl={16}>
+          <Col xs={24}>
             <Row align="middle" justify="space-between" style={{ marginBottom: 24 }}>
               <Col>
                 <Button onClick={() => window.history.back()} type="text" icon={<ArrowLeftOutlined />}>
