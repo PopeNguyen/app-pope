@@ -109,7 +109,7 @@ const CategoryBank = () => {
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
       {contextHolder}
       <FullScreenLoader spinning={loading || spinning} />
-      <div className="max-w-2xl mx-auto">
+      <div className="mx-auto">
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
                 Quay lại
