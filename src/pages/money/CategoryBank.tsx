@@ -14,11 +14,19 @@ import {
   Modal,
   Popconfirm,
   Select,
-  Tag
+  Tabs
 } from "antd";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { PlusOutlined, EditOutlined, DeleteOutlined, ArrowLeftOutlined } from "@ant-design/icons";
+import { 
+  PlusOutlined, 
+  EditOutlined, 
+  DeleteOutlined, 
+  ArrowLeftOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+  AppstoreOutlined
+} from "@ant-design/icons";
 import FullScreenLoader from '@/components/FullScreenLoader';
 
 const CategoryBank = () => {
@@ -31,6 +39,7 @@ const CategoryBank = () => {
   const { user, loading, isAuthenticated } = useAuth();
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
+  const [activeTab, setActiveTab] = useState('expense');
 
   const callApiGetCategoryBank = async () => {
     if (!user) return;
@@ -50,6 +59,10 @@ const CategoryBank = () => {
       callApiGetCategoryBank();
     }
   }, [user]);
+
+  // Phân loại dữ liệu
+  const expenseList = useMemo(() => categoryBank.filter(item => item.type === 'expense'), [categoryBank]);
+  const incomeList = useMemo(() => categoryBank.filter(item => item.type === 'income'), [categoryBank]);
 
   const onEdit = (record: any) => {
     setIsEdit(true);
@@ -101,49 +114,121 @@ const CategoryBank = () => {
     });
   };
 
+  // Hàm render chung cho danh sách
+  const renderList = (data: any[], type: string) => (
+    <List
+      itemLayout="horizontal"
+      dataSource={data}
+      locale={{ emptyText: 'Chưa có danh mục nào' }}
+      renderItem={(item) => (
+        <List.Item
+          className="bg-white rounded-lg shadow-sm mb-3 border border-gray-100 py-4 px-5 transition-all active:bg-gray-50 flex items-center"
+          actions={[
+            <Button 
+                type="text" 
+                size="large" 
+                className="text-gray-400 hover:text-blue-600 flex items-center justify-center" 
+                icon={<EditOutlined style={{ fontSize: '20px' }} />} 
+                onClick={() => onEdit(item)} 
+                key="edit" 
+            />,
+            <Popconfirm
+              title="Xóa mục này?"
+              onConfirm={() => onDelete(item)}
+              okText="Xóa"
+              cancelText="Hủy"
+              key="delete"
+              placement="topRight"
+            >
+              <Button 
+                type="text" 
+                size="large" 
+                danger 
+                className="flex items-center justify-center opacity-80 hover:opacity-100"
+                icon={<DeleteOutlined style={{ fontSize: '20px' }} />} 
+              />
+            </Popconfirm>,
+          ]}
+        >
+          <List.Item.Meta
+            // Đã xóa avatar
+            title={
+                <div className="flex flex-col justify-center h-10">
+                    <span className={`font-bold text-lg leading-tight ${type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                        {item.nameCategory}
+                    </span>
+                </div>
+            }
+          />
+        </List.Item>
+      )}
+    />
+  );
+
+  const items = [
+    {
+      key: 'expense',
+      label: (
+        <span className="flex items-center gap-2 px-1 text-base">
+          <ArrowDownOutlined /> Chi phí
+        </span>
+      ),
+      children: renderList(expenseList, 'expense'),
+    },
+    {
+      key: 'income',
+      label: (
+        <span className="flex items-center gap-2 px-1 text-base">
+          <ArrowUpOutlined /> Thu nhập
+        </span>
+      ),
+      children: renderList(incomeList, 'income'),
+    },
+  ];
+
   if (!isAuthenticated) {
     return <p className="text-center mt-4">Vui lòng đăng nhập để sử dụng chức năng này.</p>;
   }
 
   return (
-    <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
+    <div className="p-3 md:p-6 bg-gray-50 min-h-screen">
       {contextHolder}
       <FullScreenLoader spinning={loading || spinning} />
-      <div className="mx-auto">
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-            <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
-                Quay lại
+      
+      <div className="w-full">
+        {/* Header */}
+        <header className="flex justify-between items-center mb-6 sticky top-0 bg-gray-50 z-10 py-2">
+            <Button type="text" size="large" icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)} className="flex items-center text-gray-600">
             </Button>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-800 text-center sm:text-left">Quản lý danh mục</h1>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalVisible(true)}>
-                Thêm danh mục
-            </Button>
+            
+            <h1 className="text-xl font-bold text-gray-800 m-0 absolute left-1/2 transform -translate-x-1/2">
+                Danh mục
+            </h1>
+            
+            <Button 
+                type="primary" 
+                shape="circle" 
+                icon={<PlusOutlined />} 
+                size="large"
+                className="shadow-md"
+                onClick={() => {
+                    form.setFieldValue('type', activeTab);
+                    setIsModalVisible(true);
+                }}
+            />
         </header>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm">
-            <List
-                itemLayout="horizontal"
-                dataSource={categoryBank}
-                renderItem={(item) => (
-                    <List.Item
-                        actions={[
-                            <Button type="text" icon={<EditOutlined />} onClick={() => onEdit(item)} />,
-                            <Popconfirm
-                                title="Bạn có chắc chắn muốn xóa?"
-                                onConfirm={() => onDelete(item)}
-                                okText="Có"
-                                cancelText="Không"
-                            >
-                                <Button type="text" danger icon={<DeleteOutlined />} />
-                            </Popconfirm>,
-                        ]}
-                    >
-                        <List.Item.Meta
-                            title={<span className="font-semibold">{item.nameCategory}</span>}
-                            description={<Tag color={item.type === 'income' ? 'green' : 'red'}>{item.type === 'income' ? 'Thu nhập' : 'Chi phí'}</Tag>}
-                        />
-                    </List.Item>
-                )}
+        {/* Tabs Content */}
+        <div className="category-tabs">
+            <Tabs 
+                defaultActiveKey="expense" 
+                activeKey={activeTab}
+                onChange={setActiveTab}
+                items={items} 
+                centered
+                size="large"
+                className="bg-transparent"
+                tabBarStyle={{ marginBottom: 16, borderBottom: 'none' }}
             />
         </div>
       </div>
@@ -156,21 +241,23 @@ const CategoryBank = () => {
         okText={isEdit ? "Cập nhật" : "Lưu"}
         cancelText="Hủy"
         destroyOnClose
+        centered
+        style={{ top: 20 }}
       >
-        <Form form={form} layout="vertical" name="category_form" initialValues={{ type: 'expense' }}>
+        <Form form={form} layout="vertical" name="category_form" initialValues={{ type: activeTab }}>
           <Form.Item
             name="nameCategory"
             label="Tên danh mục"
             rules={[{ required: true, message: "Vui lòng nhập tên danh mục!" }]}
           >
-            <Input placeholder="Ví dụ: Ăn uống, Lương..." />
+            <Input prefix={<AppstoreOutlined className="text-gray-400" />} placeholder="Ví dụ: Ăn uống, Lương..." size="large" />
           </Form.Item>
           <Form.Item
             name="type"
             label="Loại danh mục"
             rules={[{ required: true, message: "Vui lòng chọn loại danh mục!" }]}
           >
-            <Select>
+            <Select size="large">
               <Select.Option value="expense">Chi phí</Select.Option>
               <Select.Option value="income">Thu nhập</Select.Option>
             </Select>

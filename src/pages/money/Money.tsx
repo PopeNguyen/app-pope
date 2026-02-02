@@ -351,6 +351,7 @@ const Money = () => {
             </Button>
             <Button icon={<WalletOutlined />} onClick={() => navigate(`/app-pope/account`)}>Tài khoản</Button>
             <Button icon={<AppstoreOutlined />} onClick={() => navigate(`/app-pope/category-bank`)}>Danh mục</Button>
+            <Button icon={<AppstoreOutlined />} onClick={() => navigate(`/app-pope/list-template`)}>Giao dịch mẫu</Button>
           </div>
         </div>
 

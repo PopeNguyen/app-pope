@@ -12,6 +12,7 @@ import CasinoMatch from '@/pages/casino/CasinoMatch';
 import { withAuth } from '@/utils/withAuth';
 import AccountBank from '@/pages/money/AccountBank';
 import CategoryBank from '@/pages/money/CategoryBank';
+import ListTemplate from '@/pages/money/ListTemplate';
 import ListProject from '@/pages/learnEnglish/LearnEnglish';
 import VocabularyList from '@/pages/learnEnglish/VocabularyList';
 
@@ -41,6 +42,7 @@ const router = createBrowserRouter([
       { path: 'money', element: withAuth(<Money />) },
       { path: 'account', element: withAuth(<AccountBank />) },
       { path: 'category-bank', element: withAuth(<CategoryBank />) },
+      { path: 'list-template', element: withAuth(<ListTemplate />) },
       { path: 'casino', element: withAuth(<Casino />) },
       { path: 'casino/:id', element: withAuth(<CasinoMatch />) },
       { path: 'learn-english', element: withAuth(<ListProject />) },

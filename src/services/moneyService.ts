@@ -67,3 +67,48 @@ export const deleteListTransaction = async (id: string) => {
   const transactionRef = doc(db, "listTransaction", id);
   await deleteDoc(transactionRef);
 };
+
+// list template
+export const addListTemplate = async (data: any) => {
+  try {
+    const docRef = await addDoc(collection(db, "templates"), data);
+    return docRef.id;
+  } catch (e) {
+    console.error("Error adding template: ", e);
+    throw e;
+  }
+};
+
+export const updateListTemplate = async (data: any) => {
+  try {
+    const docRef = doc(db, "templates", data.id);
+    await updateDoc(docRef, data);
+  } catch (e) {
+    console.error("Error updating template: ", e);
+    throw e;
+  }
+};
+
+export const getListTemplate = async (uid: string) => {
+  try {
+    const q = query(collection(db, "templates"), where("uid", "==", uid));
+    const querySnapshot = await getDocs(q);
+    const data: any[] = [];
+    querySnapshot.forEach((doc) => {
+      data.push({ id: doc.id, ...doc.data() });
+    });
+    return data;
+  } catch (e) {
+    console.error("Error getting templates: ", e);
+    throw e;
+  }
+};
+
+export const deleteListTemplate = async (id: string) => {
+  try {
+    await deleteDoc(doc(db, "templates", id));
+  } catch (e) {
+    console.error("Error deleting template: ", e);
+    throw e;
+  }
+};
