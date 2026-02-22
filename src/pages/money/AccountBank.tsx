@@ -15,21 +15,31 @@ import {
   message,
   Modal,
   Popconfirm,
+  Select, // Thêm Select để làm dropdown chọn tài khoản
 } from "antd";
 import { useEffect, useState } from "react";
-import { PlusOutlined, EditOutlined, DeleteOutlined, ArrowLeftOutlined } from "@ant-design/icons";
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  ArrowLeftOutlined,
+  SwapOutlined, // Thêm icon cho nút chuyển tiền
+} from "@ant-design/icons";
 import FullScreenLoader from '@/components/FullScreenLoader';
 import { useNavigate } from "react-router-dom";
 
 const AccountBank = () => {
   const navigate = useNavigate();
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
+  const [isTransferModalVisible, setIsTransferModalVisible] = useState<boolean>(false); // State cho modal chuyển tiền
   const [spinning, setSpinning] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any>(null);
   const [listBank, setListBank] = useState<any[]>([]);
   const { user, loading, isAuthenticated } = useAuth();
+
   const [form] = Form.useForm();
+  const [transferForm] = Form.useForm(); // Form riêng cho tính năng chuyển tiền
   const [messageApi, contextHolder] = message.useMessage();
 
   const callApiGetListBank = async () => {
@@ -78,6 +88,11 @@ const AccountBank = () => {
     setIsEdit(false);
   };
 
+  const handleTransferCancel = () => {
+    setIsTransferModalVisible(false);
+    transferForm.resetFields();
+  };
+
   const handleOk = () => {
     form.validateFields().then(async (values) => {
       if (!user) return;
@@ -101,6 +116,49 @@ const AccountBank = () => {
     });
   };
 
+  // Logic xử lý chuyển tiền
+  const handleTransferOk = () => {
+    transferForm.validateFields().then(async (values) => {
+      const { fromBankId, toBankId, transferAmount } = values;
+
+      if (fromBankId === toBankId) {
+        messageApi.error("Tài khoản nguồn và đích phải khác nhau!");
+        return;
+      }
+
+      const fromBank = listBank.find((b) => b.id === fromBankId);
+      const toBank = listBank.find((b) => b.id === toBankId);
+
+      if (!fromBank || !toBank) return;
+
+      if (Number(fromBank.amount) < transferAmount) {
+        messageApi.error("Số dư không đủ để thực hiện giao dịch!");
+        return;
+      }
+
+      setSpinning(true);
+      try {
+        // Trừ tiền tài khoản nguồn và cộng tiền tài khoản đích
+        const updatedFromBank = { ...fromBank, amount: Number(fromBank.amount) - Number(transferAmount) };
+        const updatedToBank = { ...toBank, amount: Number(toBank.amount) + Number(transferAmount) };
+
+        // Gọi API cập nhật song song cả 2 tài khoản
+        await Promise.all([
+          updateListBank(updatedFromBank),
+          updateListBank(updatedToBank)
+        ]);
+
+        messageApi.success("Chuyển tiền thành công!");
+        handleTransferCancel();
+        callApiGetListBank(); // Tải lại danh sách
+      } catch (error) {
+        messageApi.error("Chuyển tiền thất bại!");
+      } finally {
+        setSpinning(false);
+      }
+    });
+  };
+
   if (!isAuthenticated) {
     return <p className="text-center mt-4">Vui lòng đăng nhập để sử dụng chức năng này.</p>;
   }
@@ -115,9 +173,18 @@ const AccountBank = () => {
             Quay lại
           </Button>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800 text-center sm:text-left">Quản lý tài khoản</h1>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalVisible(true)}>
-            Thêm tài khoản
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              icon={<SwapOutlined />}
+              onClick={() => setIsTransferModalVisible(true)}
+              disabled={listBank.length < 2} // Cần ít nhất 2 tài khoản để chuyển tiền
+            >
+              Chuyển tiền
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalVisible(true)}>
+              Thêm tài khoản
+            </Button>
+          </div>
         </header>
 
         <List
@@ -153,6 +220,7 @@ const AccountBank = () => {
         />
       </div>
 
+      {/* Modal Thêm / Cập nhật tài khoản */}
       <Modal
         title={isEdit ? "Cập nhật tài khoản" : "Thêm tài khoản"}
         open={isModalVisible}
@@ -180,6 +248,63 @@ const AccountBank = () => {
               formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
               parser={(value) => value!.replace(/\$\s?|(,*)/g, "")}
               placeholder="0"
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal Chuyển tiền */}
+      <Modal
+        title="Chuyển tiền giữa các tài khoản"
+        open={isTransferModalVisible}
+        onCancel={handleTransferCancel}
+        onOk={handleTransferOk}
+        okText="Chuyển tiền"
+        cancelText="Hủy"
+        destroyOnClose
+      >
+        <Form form={transferForm} layout="vertical" name="transfer_form">
+          <Form.Item
+            name="fromBankId"
+            label="Từ tài khoản (Nguồn)"
+            rules={[{ required: true, message: "Vui lòng chọn tài khoản nguồn!" }]}
+          >
+            <Select placeholder="Chọn tài khoản nguồn">
+              {listBank.map((bank) => (
+                <Select.Option key={bank.id} value={bank.id}>
+                  {bank.nameBank} (Số dư: {Number(bank.amount || 0).toLocaleString("vi-VN")}đ)
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="toBankId"
+            label="Đến tài khoản (Đích)"
+            rules={[{ required: true, message: "Vui lòng chọn tài khoản đích!" }]}
+          >
+            <Select placeholder="Chọn tài khoản đích">
+              {listBank.map((bank) => (
+                <Select.Option key={bank.id} value={bank.id}>
+                  {bank.nameBank} (Số dư: {Number(bank.amount || 0).toLocaleString("vi-VN")}đ)
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="transferAmount"
+            label="Số tiền muốn chuyển"
+            rules={[
+              { required: true, message: "Vui lòng nhập số tiền!" },
+              { type: 'number', min: 1, message: "Số tiền phải lớn hơn 0!" }
+            ]}
+          >
+            <InputNumber
+              className="w-full"
+              formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+              parser={(value) => value!.replace(/\$\s?|(,*)/g, "")}
+              placeholder="Nhập số tiền"
             />
           </Form.Item>
         </Form>

@@ -6,7 +6,6 @@ import {
   getListTransaction,
   updateListBank,
   updateListTransaction,
-  // Thêm các service template
   addListTemplate,
   getListTemplate,
   deleteListTemplate,
@@ -46,8 +45,10 @@ import {
   ArrowDownOutlined,
   WalletOutlined,
   AppstoreOutlined,
-  ThunderboltOutlined, // Icon cho mẫu nhanh
-  CloseCircleFilled
+  ThunderboltOutlined,
+  CloseCircleFilled,
+  UpOutlined,
+  DownOutlined
 } from "@ant-design/icons";
 import FullScreenLoader from '@/components/FullScreenLoader';
 
@@ -55,10 +56,8 @@ const { RangePicker } = DatePicker;
 const { Text } = Typography;
 
 const Money = () => {
-  // --- States ---
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   
-  // State cho Template
   const [isTemplateModalVisible, setIsTemplateModalVisible] = useState<boolean>(false);
   const [listTemplate, setListTemplate] = useState<any[]>([]);
   const [templateType, setTemplateType] = useState('expense');
@@ -68,11 +67,12 @@ const Money = () => {
   const [listTransaction, setListTransaction] = useState<any[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<any[]>([]);
   const [spinning, setSpinning] = useState(false);
+  const [showMobileStats, setShowMobileStats] = useState<boolean>(false);
   
   const { user, loading, isAuthenticated } = useAuth();
   
   const [form] = Form.useForm();
-  const [templateForm] = Form.useForm(); // Form riêng cho tạo mẫu
+  const [templateForm] = Form.useForm();
   
   const navigate = useNavigate();
   const [messageApi, contextHolder] = message.useMessage();
@@ -90,7 +90,6 @@ const Money = () => {
     if (!user) return;
     setSpinning(true);
     try {
-      // Lấy thêm templates
       const [transactions, banks, categories, templates] = await Promise.all([
         getListTransaction(user.uid),
         getListBank(user.uid),
@@ -156,7 +155,6 @@ const Money = () => {
     }, { totalIncome: 0, totalExpense: 0, netIncome: 0 });
   }, [filteredTransactions]);
 
-  // --- Transaction Handlers ---
   const handleOk = () => {
     form.validateFields().then(async (values) => {
       if (!user) return;
@@ -264,9 +262,6 @@ const Money = () => {
     }
   };
 
-  // --- Template Handlers (Chức năng mới) ---
-
-  // 1. Lưu mẫu mới
   const handleSaveTemplate = () => {
     templateForm.validateFields().then(async (values) => {
         if(!user) return;
@@ -277,7 +272,6 @@ const Money = () => {
             setIsTemplateModalVisible(false);
             templateForm.resetFields();
             
-            // Reload templates
             const templates = await getListTemplate(user.uid);
             setListTemplate(templates);
         } catch (error) {
@@ -288,9 +282,8 @@ const Money = () => {
     })
   }
 
-  // 2. Xóa mẫu
   const handleDeleteTemplate = async (e: React.MouseEvent, id: string) => {
-      e.stopPropagation(); // Ngăn click nhầm vào card
+      e.stopPropagation();
       if(!user) return;
       setSpinning(true);
       try {
@@ -305,22 +298,20 @@ const Money = () => {
       }
   }
 
-  // 3. Áp dụng mẫu (Click vào mẫu)
   const applyTemplate = (template: any) => {
       setIsEdit(false);
-      setTransactionType(template.type); // Cập nhật loại để load đúng danh mục trong Select
+      setTransactionType(template.type);
       form.setFieldsValue({
           type: template.type,
           amount: template.amount,
           nameCategory: template.nameCategory,
           nameBank: template.nameBank,
           note: template.note,
-          date: dayjs() // Luôn lấy ngày hiện tại
+          date: dayjs()
       });
       setIsModalVisible(true);
   }
 
-  // --- Filter Categories logic ---
   const filteredCategories = useMemo(() => {
     return listCategory.filter(c => c.type === transactionType);
   }, [listCategory, transactionType]);
@@ -334,7 +325,6 @@ const Money = () => {
     return <p className="text-center mt-4">Vui lòng đăng nhập để sử dụng chức năng này.</p>;
   }
 
-  // --- Mobile & Desktop Columns ---
   const renderMobileItem = (item: any) => {
     const dateStr = (item.date && typeof item.date.toDate === 'function' ? dayjs(item.date.toDate()) : dayjs(item.date)).format('DD/MM/YYYY');
     const isIncome = item.type === 'income';
@@ -399,7 +389,6 @@ const Money = () => {
       <FullScreenLoader spinning={loading || spinning} />
       <div className="max-w-7xl mx-auto">
         
-        {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Quản lý tài chính</h1>
@@ -416,16 +405,12 @@ const Money = () => {
             </Button>
             <Button icon={<WalletOutlined />} onClick={() => navigate(`/app-pope/account`)}>Tài khoản</Button>
             <Button icon={<AppstoreOutlined />} onClick={() => navigate(`/app-pope/category-bank`)}>Danh mục</Button>
-            {/* Nếu anh muốn nút dẫn tới trang quản lý template riêng, giữ dòng dưới. Nếu không, có thể bỏ vì đã có thanh template nhanh */}
             <Button icon={<AppstoreOutlined />} onClick={() => navigate(`/app-pope/list-template`)}>Quản lý mẫu</Button>
           </div>
         </div>
 
-        {/* --- SECTION MỚI: GIAO DỊCH NHANH (TEMPLATES) --- */}
-        {/* Thanh trượt ngang tối ưu cho mobile */}
         <div className="mb-6 overflow-x-auto pb-2 -mx-3 px-3 md:mx-0 md:px-0 no-scrollbar">
             <div className="flex gap-3 min-w-max">
-                {/* Nút thêm mẫu */}
                 <div 
                     onClick={() => setIsTemplateModalVisible(true)}
                     className="flex flex-col items-center justify-center w-28 h-24 bg-white border border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-blue-500 hover:text-blue-500 transition-colors flex-shrink-0 shadow-sm"
@@ -434,7 +419,6 @@ const Money = () => {
                     <span className="text-xs font-semibold">Tạo mẫu</span>
                 </div>
 
-                {/* Danh sách các mẫu */}
                 {listTemplate.map((item) => (
                     <div 
                         key={item.id}
@@ -443,7 +427,6 @@ const Money = () => {
                             ${item.type === 'income' ? 'border-green-500' : 'border-red-500'}
                         `}
                     >   
-                        {/* Nút xóa mẫu */}
                         <div className="absolute top-1 right-1">
                              <Popconfirm title="Xóa mẫu này?" onConfirm={(e: any) => handleDeleteTemplate(e, item.id)} okText="Xóa" cancelText="Hủy">
                                 <CloseCircleFilled 
@@ -467,8 +450,18 @@ const Money = () => {
             </div>
         </div>
 
-        {/* Statistics Section */}
-        <Row gutter={[12, 12]} className="mb-6">
+        <div className="lg:hidden mb-4 flex items-center justify-between">
+          <span className="font-semibold text-gray-600">Tổng quan tài chính</span>
+          <Button 
+            type="text" 
+            icon={showMobileStats ? <UpOutlined /> : <DownOutlined />} 
+            onClick={() => setShowMobileStats(!showMobileStats)}
+          >
+            {showMobileStats ? 'Thu gọn' : 'Xem chi tiết'}
+          </Button>
+        </div>
+
+        <Row gutter={[12, 12]} className={`mb-6 ${showMobileStats ? 'flex' : 'hidden'} lg:flex`}>
           <Col xs={12} lg={8}>
              <Card bordered={false} className="shadow-sm h-full" bodyStyle={{ padding: '12px' }}>
                 <Statistic title={<span className="text-xs md:text-sm text-gray-500">Thu nhập</span>} value={totalIncome} precision={0} prefix={<ArrowUpOutlined className="text-green-500" />} valueStyle={{ color: '#3f8600', fontSize: '1.25rem', fontWeight: 600 }} formatter={(value) => value.toLocaleString('vi-VN')} />
@@ -486,7 +479,6 @@ const Money = () => {
           </Col>
         </Row>
 
-        {/* Filter & Content Section */}
         <Card className="shadow-sm" bodyStyle={{ padding: '16px' }}>
           <div className="flex flex-col gap-4 mb-4">
               <div className="flex flex-col md:flex-row justify-between gap-4">
@@ -518,7 +510,6 @@ const Money = () => {
         </Card>
       </div>
 
-      {/* Main Modal: Add Transaction */}
       <Modal
         title={isEdit ? "Cập nhật giao dịch" : "Thêm giao dịch"}
         open={isModalVisible}
@@ -566,7 +557,6 @@ const Money = () => {
         </Form>
       </Modal>
 
-      {/* New Modal: Create Template */}
       <Modal
         title="Tạo mẫu giao dịch mới"
         open={isTemplateModalVisible}
