@@ -60,7 +60,6 @@ const CategoryBank = () => {
     }
   }, [user]);
 
-  // Phân loại dữ liệu
   const expenseList = useMemo(() => categoryBank.filter(item => item.type === 'expense'), [categoryBank]);
   const incomeList = useMemo(() => categoryBank.filter(item => item.type === 'income'), [categoryBank]);
 
@@ -114,7 +113,6 @@ const CategoryBank = () => {
     });
   };
 
-  // Hàm render chung cho danh sách
   const renderList = (data: any[], type: string) => (
     <List
       itemLayout="horizontal"
@@ -122,44 +120,45 @@ const CategoryBank = () => {
       locale={{ emptyText: 'Chưa có danh mục nào' }}
       renderItem={(item) => (
         <List.Item
-          className="bg-white rounded-lg shadow-sm mb-3 border border-gray-100 py-4 px-5 transition-all active:bg-gray-50 flex items-center"
+          className="bg-white rounded-2xl shadow-sm hover:shadow-md border border-gray-100 mb-4 p-4 transition-all duration-300 flex items-center justify-between"
           actions={[
-            <Button 
-                type="text" 
-                size="large" 
-                className="text-gray-400 hover:text-blue-600 flex items-center justify-center" 
-                icon={<EditOutlined style={{ fontSize: '20px' }} />} 
-                onClick={() => onEdit(item)} 
-                key="edit" 
-            />,
+            <div 
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-50 text-gray-500 hover:bg-blue-50 hover:text-blue-600 cursor-pointer transition-colors"
+              onClick={() => onEdit(item)}
+              key="edit"
+            >
+              <EditOutlined className="text-lg" />
+            </div>,
             <Popconfirm
-              title="Xóa mục này?"
+              title="Bạn có chắc chắn muốn xóa?"
               onConfirm={() => onDelete(item)}
               okText="Xóa"
+              okButtonProps={{ danger: true }}
               cancelText="Hủy"
               key="delete"
               placement="topRight"
             >
-              <Button 
-                type="text" 
-                size="large" 
-                danger 
-                className="flex items-center justify-center opacity-80 hover:opacity-100"
-                icon={<DeleteOutlined style={{ fontSize: '20px' }} />} 
-              />
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-50 text-gray-500 hover:bg-red-50 hover:text-red-600 cursor-pointer transition-colors">
+                <DeleteOutlined className="text-lg" />
+              </div>
             </Popconfirm>,
           ]}
         >
-          <List.Item.Meta
-            // Đã xóa avatar
-            title={
-                <div className="flex flex-col justify-center h-10">
-                    <span className={`font-bold text-lg leading-tight ${type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                        {item.nameCategory}
-                    </span>
-                </div>
-            }
-          />
+          <div className="flex items-center gap-4 w-full">
+            <div className={`w-12 h-12 flex-shrink-0 rounded-2xl flex items-center justify-center text-xl font-bold ${
+              type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+            }`}>
+              {item.nameCategory ? item.nameCategory.charAt(0).toUpperCase() : '?'}
+            </div>
+            <div className="flex flex-col flex-grow truncate">
+              <span className="font-bold text-gray-800 text-lg truncate pr-2">
+                {item.nameCategory}
+              </span>
+              <span className={`text-sm font-medium ${type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
+                {type === 'income' ? '+ Thu nhập' : '- Chi phí'}
+              </span>
+            </div>
+          </div>
         </List.Item>
       )}
     />
@@ -169,97 +168,113 @@ const CategoryBank = () => {
     {
       key: 'expense',
       label: (
-        <span className="flex items-center gap-2 px-1 text-base">
-          <ArrowDownOutlined /> Chi phí
-        </span>
+        <div className="flex items-center gap-2 px-2 py-1 text-base font-medium">
+          <ArrowDownOutlined className="text-red-500" /> Chi phí
+        </div>
       ),
       children: renderList(expenseList, 'expense'),
     },
     {
       key: 'income',
       label: (
-        <span className="flex items-center gap-2 px-1 text-base">
-          <ArrowUpOutlined /> Thu nhập
-        </span>
+        <div className="flex items-center gap-2 px-2 py-1 text-base font-medium">
+          <ArrowUpOutlined className="text-green-500" /> Thu nhập
+        </div>
       ),
       children: renderList(incomeList, 'income'),
     },
   ];
 
   if (!isAuthenticated) {
-    return <p className="text-center mt-4">Vui lòng đăng nhập để sử dụng chức năng này.</p>;
+    return <p className="text-center mt-10 text-gray-500 font-medium">Vui lòng đăng nhập để sử dụng chức năng này.</p>;
   }
 
   return (
-    <div className="p-3 md:p-6 bg-gray-50 min-h-screen">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       {contextHolder}
       <FullScreenLoader spinning={loading || spinning} />
       
-      <div className="w-full">
-        {/* Header */}
-        <header className="flex justify-between items-center mb-6 sticky top-0 bg-gray-50 z-10 py-2">
-            <Button type="text" size="large" icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)} className="flex items-center text-gray-600">
-            </Button>
-            
-            <h1 className="text-xl font-bold text-gray-800 m-0 absolute left-1/2 transform -translate-x-1/2">
-                Danh mục
-            </h1>
-            
-            <Button 
-                type="primary" 
-                shape="circle" 
-                icon={<PlusOutlined />} 
-                size="large"
-                className="shadow-md"
-                onClick={() => {
-                    form.setFieldValue('type', activeTab);
-                    setIsModalVisible(true);
-                }}
-            />
+      <div className="w-full mx-auto">
+        <header className="flex justify-between items-center mb-8 bg-white p-4 rounded-2xl shadow-sm border border-gray-100 sticky top-4 z-10">
+          <Button 
+            type="text" 
+            icon={<ArrowLeftOutlined className="text-xl" />} 
+            onClick={() => navigate(-1)} 
+            className="flex items-center justify-center w-10 h-10 text-gray-600 hover:bg-gray-100 rounded-full"
+          />
+          
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800 m-0">
+            Danh mục tài chính
+          </h1>
+          
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined className="text-lg" />} 
+            onClick={() => {
+              form.setFieldValue('type', activeTab);
+              setIsModalVisible(true);
+            }}
+            className="flex items-center justify-center w-10 h-10 rounded-full shadow-md shadow-blue-200"
+          />
         </header>
 
-        {/* Tabs Content */}
-        <div className="category-tabs">
-            <Tabs 
-                defaultActiveKey="expense" 
-                activeKey={activeTab}
-                onChange={setActiveTab}
-                items={items} 
-                centered
-                size="large"
-                className="bg-transparent"
-                tabBarStyle={{ marginBottom: 16, borderBottom: 'none' }}
-            />
+        <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-100 min-h-[60vh]">
+          <Tabs 
+            defaultActiveKey="expense" 
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            items={items} 
+            centered
+            size="large"
+            tabBarStyle={{ marginBottom: 24, borderBottom: '1px solid #f3f4f6' }}
+            indicatorSize={(origin) => origin - 16}
+          />
         </div>
       </div>
 
       <Modal
-        title={isEdit ? "Cập nhật danh mục" : "Thêm danh mục"}
+        title={<span className="text-xl font-bold text-gray-800">{isEdit ? "Cập nhật danh mục" : "Thêm danh mục mới"}</span>}
         open={isModalVisible}
         onCancel={handleCancel}
         onOk={handleOk}
-        okText={isEdit ? "Cập nhật" : "Lưu"}
-        cancelText="Hủy"
+        okText={isEdit ? "Cập nhật" : "Lưu danh mục"}
+        cancelText="Hủy bỏ"
         destroyOnClose
         centered
-        style={{ top: 20 }}
+        className="rounded-2xl overflow-hidden"
+        okButtonProps={{ size: 'large', className: 'rounded-lg shadow-md' }}
+        cancelButtonProps={{ size: 'large', className: 'rounded-lg' }}
       >
-        <Form form={form} layout="vertical" name="category_form" initialValues={{ type: activeTab }}>
+        <Form form={form} layout="vertical" name="category_form" initialValues={{ type: activeTab }} className="mt-6">
           <Form.Item
             name="nameCategory"
-            label="Tên danh mục"
+            label={<span className="font-semibold text-gray-700">Tên danh mục</span>}
             rules={[{ required: true, message: "Vui lòng nhập tên danh mục!" }]}
           >
-            <Input prefix={<AppstoreOutlined className="text-gray-400" />} placeholder="Ví dụ: Ăn uống, Lương..." size="large" />
+            <Input 
+              prefix={<AppstoreOutlined className="text-gray-400 mr-2" />} 
+              placeholder="Ví dụ: Ăn uống, Tiền lương..." 
+              size="large" 
+              className="rounded-xl px-4 py-2"
+            />
           </Form.Item>
           <Form.Item
             name="type"
-            label="Loại danh mục"
+            label={<span className="font-semibold text-gray-700">Loại giao dịch</span>}
             rules={[{ required: true, message: "Vui lòng chọn loại danh mục!" }]}
+            className="mb-2"
           >
-            <Select size="large">
-              <Select.Option value="expense">Chi phí</Select.Option>
-              <Select.Option value="income">Thu nhập</Select.Option>
+            <Select size="large" className="rounded-xl">
+              <Select.Option value="expense">
+                <div className="flex items-center gap-2 text-red-600 font-medium">
+                  <ArrowDownOutlined /> Chi phí
+                </div>
+              </Select.Option>
+              <Select.Option value="income">
+                <div className="flex items-center gap-2 text-green-600 font-medium">
+                  <ArrowUpOutlined /> Thu nhập
+                </div>
+              </Select.Option>
             </Select>
           </Form.Item>
         </Form>

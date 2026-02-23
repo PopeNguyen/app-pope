@@ -50,10 +50,10 @@ export default function MainLayout() {
       width={240}
       className="!fixed h-full z-10 shadow-lg"
     >
-        <div className="h-16 flex items-center justify-center text-white font-bold text-lg bg-gray-900">
-            {collapsed ? "M" : "MyAPP"}
-        </div>
-        {menu}
+      <div className="h-16 flex items-center justify-center text-white font-bold text-lg bg-gray-900">
+        {collapsed ? "M" : "MyAPP"}
+      </div>
+      {menu}
     </Sider>
   );
 
@@ -70,20 +70,18 @@ export default function MainLayout() {
           closable={false}
           width={'85%'}
         >
-            <div className="h-16 flex items-center justify-center text-white font-bold text-lg bg-gray-900">
-                MyAPP
-            </div>
-            {menu}
+          <div className="h-16 flex items-center justify-center text-white font-bold text-lg bg-gray-900">
+            MyAPP
+          </div>
+          {menu}
         </Drawer>
       )}
       <Layout style={{ marginLeft: screens.md ? (collapsed ? 80 : 240) : 0, transition: 'margin-left 0.2s' }} className="h-screen flex flex-col">
-        <AntHeader className="!p-0 !h-auto" style={{ position: 'sticky', top: 0, zIndex: 10}}>
-            <Header onMenuClick={() => setMobileDrawerOpen(true)} />
+        <AntHeader className="!p-0 !h-auto" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+          <Header onMenuClick={() => setMobileDrawerOpen(true)} />
         </AntHeader>
         <Content className="flex-auto overflow-y-auto p-4">
-            <div className="bg-white p-4 rounded-lg shadow-md">
-                <Outlet />
-            </div>
+          <Outlet />
         </Content>
       </Layout>
     </Layout>

@@ -52,7 +52,7 @@ const HabitCalendar: React.FC = () => {
   const weekDays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
   return (
-    <div className="max-w-md mx-auto bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100">
+    <div className="mx-auto bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100">
       {/* Header: Chuyển tháng */}
       <div className="flex justify-between items-center mb-6">
         <Button 

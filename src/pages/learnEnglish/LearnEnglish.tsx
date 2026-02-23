@@ -13,6 +13,7 @@ const LearnEnglish = () => {
   const [editingList, setEditingList] = useState<any>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
+  const [modal, contextHolder] = Modal.useModal();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -60,11 +61,12 @@ const LearnEnglish = () => {
   };
 
   const showDeleteConfirm = (listId: string) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Are you sure you want to delete this list?',
       content: 'All words within this list will be permanently removed.',
       okText: 'Yes, Delete It',
-      okType: 'danger',
+      okButtonProps: { danger: true },
+      cancelText: 'Cancel',
       onOk: async () => await deleteVocabularyList(listId),
     });
   };
@@ -94,7 +96,13 @@ const LearnEnglish = () => {
     );
     return (
       <Popover content={content} title="Review Schedule" trigger="click" placement="top">
-        <div className="flex justify-center items-center text-gray-500 hover:text-blue-500 transition-colors py-2">
+        <div 
+          className="flex justify-center items-center text-gray-500 hover:text-blue-500 transition-colors py-2 cursor-pointer"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
           <InfoCircleOutlined key="info" className="text-lg" />
         </div>
       </Popover>
@@ -102,11 +110,11 @@ const LearnEnglish = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen">
       <FullScreenLoader spinning={loading} />
+      {contextHolder}
       
-      <div className="max-w-7xl mx-auto">
-        {/* Header tối ưu cho mobile & desktop */}
+      <div className="mx-auto">
         <header className="flex justify-between items-center mb-6 md:mb-8 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-blue-600 m-0 flex items-center gap-2">
@@ -127,7 +135,6 @@ const LearnEnglish = () => {
           </Button>
         </header>
 
-        {/* Danh sách */}
         <List
           grid={{ gutter: 16, xs: 1, sm: 2, md: 2, lg: 3, xl: 3, xxl: 4 }}
           dataSource={lists}
@@ -144,12 +151,26 @@ const LearnEnglish = () => {
                   actions={[
                     renderDatePopover(list),
                     <Tooltip title="Edit List" key="edit">
-                      <div className="flex justify-center items-center text-gray-500 hover:text-green-500 transition-colors py-2" onClick={() => showModal(list)}>
+                      <div 
+                        className="flex justify-center items-center text-gray-500 hover:text-green-500 transition-colors py-2 cursor-pointer" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          showModal(list);
+                        }}
+                      >
                         <EditOutlined className="text-lg" />
                       </div>
                     </Tooltip>,
                     <Tooltip title="Delete List" key="delete">
-                      <div className="flex justify-center items-center text-gray-500 hover:text-red-500 transition-colors py-2" onClick={() => showDeleteConfirm(list.id)}>
+                      <div 
+                        className="flex justify-center items-center text-gray-500 hover:text-red-500 transition-colors py-2 cursor-pointer" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          showDeleteConfirm(list.id);
+                        }}
+                      >
                         <DeleteOutlined className="text-lg" />
                       </div>
                     </Tooltip>,
@@ -180,10 +201,9 @@ const LearnEnglish = () => {
         />
       </div>
 
-      {/* Modal chỉnh sửa form */}
       <Modal
         title={<span className="text-lg font-bold">{editingList ? 'Edit List' : 'Create a New List'}</span>}
-        open={isModalVisible} // Lưu ý: Ant Design bản mới dùng `open` thay cho `visible`
+        open={isModalVisible}
         onCancel={handleCancel}
         footer={null}
         destroyOnClose

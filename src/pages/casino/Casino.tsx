@@ -60,7 +60,7 @@ export default function Casino() {
   return (
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
         {contextHolder}
-        <div className="max-w-4xl mx-auto">
+        <div className="mx-auto">
             <header className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-gray-800">Sổ đỏ đen</h1>
                 <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
