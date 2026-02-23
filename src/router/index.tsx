@@ -15,6 +15,7 @@ import CategoryBank from '@/pages/money/CategoryBank';
 import ListTemplate from '@/pages/money/ListTemplate';
 import ListProject from '@/pages/learnEnglish/LearnEnglish';
 import VocabularyList from '@/pages/learnEnglish/VocabularyList';
+import HabitCalendar from '@/pages/habitCalendar';
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -47,6 +48,7 @@ const router = createBrowserRouter([
       { path: 'casino/:id', element: withAuth(<CasinoMatch />) },
       { path: 'learn-english', element: withAuth(<ListProject />) },
       { path: 'learn-english/:listId', element: withAuth(<VocabularyList />) },
+      { path: 'habit-calendar', element: withAuth(<HabitCalendar />) },
     ],
   },
 ]);

@@ -244,7 +244,7 @@ const AccountBank = () => {
             rules={[{ required: true, message: "Vui lòng nhập số dư!" }]}
           >
             <InputNumber
-              className="w-full"
+              className="w-full!"
               formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
               parser={(value) => value!.replace(/\$\s?|(,*)/g, "")}
               placeholder="0"

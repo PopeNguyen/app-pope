@@ -1,4 +1,4 @@
-import { ListTodo, Wallet, Swords, BookOpen } from 'lucide-react';
+import { ListTodo, Wallet, Swords, BookOpen, CalendarCheck } from 'lucide-react';
 
 export const menuItems = [
   {
@@ -24,5 +24,11 @@ export const menuItems = [
     icon: <BookOpen size={18} />,
     label: 'Từ vựng',
     path: '/app-pope/learn-english',
+  },
+  {
+    key: '5',
+    icon: <CalendarCheck size={18} />,
+    label: 'Kiểm soát nhiệm vụ',
+    path: '/app-pope/habit-calendar',
   },
 ];
