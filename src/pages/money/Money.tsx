@@ -332,21 +332,20 @@ const Money = () => {
     const isIncome = item.type === 'income';
 
     return (
-      <List.Item className="bg-white rounded-xl shadow-sm mb-3 border border-gray-100 p-4 block">
+      <List.Item className="bg-white rounded-xl shadow-sm mb-3 border border-gray-100 p-4 block px-2!">
         <div className="flex justify-between items-start mb-2">
           <div>
-            <div className="font-bold text-gray-800 text-base">{item.nameCategory}</div>
+            <div className="flex font-bold text-gray-800 text-base items-end">{item.nameCategory} {item.note && <div className="bg-gray-50 rounded text-sm text-gray-600 italic pl-1">/ {item.note}</div>}</div>
             <div className="text-xs text-gray-500 mt-1">{dateStr} • {item.nameBank}</div>
           </div>
           <div className={`font-bold text-lg ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
             {isIncome ? '+' : '-'}{Math.abs(item.amount).toLocaleString('vi-VN')}
           </div>
         </div>
-        {item.note && <div className="bg-gray-50 p-2 rounded text-sm text-gray-600 mb-3 italic">"{item.note}"</div>}
-        <div className="flex justify-end gap-2 border-t pt-3 mt-2 border-dashed border-gray-200">
-          <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(item)}>Sửa</Button>
+        <div className="flex flex-col gap-2">
+          <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(item)}></Button>
           <Popconfirm title="Xóa giao dịch này?" onConfirm={() => onDelete(item)} okText="Xóa" cancelText="Hủy">
-            <Button size="small" danger icon={<DeleteOutlined />}>Xóa</Button>
+            <Button size="small" danger icon={<DeleteOutlined />}></Button>
           </Popconfirm>
         </div>
       </List.Item>
@@ -428,7 +427,7 @@ const Money = () => {
               <div
                 key={item.id}
                 onClick={() => applyTemplate(item)}
-                className={`relative flex flex-col justify-between w-[130px] h-[72px] p-2.5 rounded-xl shadow-sm cursor-pointer border-l-[3px] flex-shrink-0 transition-transform active:scale-95 bg-white
+                className={`relative flex flex-col justify-between h-[72px] p-2.5 rounded-xl shadow-sm cursor-pointer border-l-[3px] flex-shrink-0 transition-transform active:scale-95 bg-white
                 ${item.type === 'income' ? 'border-green-500' : 'border-red-500'}
             `}
               >

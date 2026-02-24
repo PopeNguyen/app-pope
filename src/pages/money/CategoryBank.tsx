@@ -120,7 +120,7 @@ const CategoryBank = () => {
       locale={{ emptyText: 'Chưa có danh mục nào' }}
       renderItem={(item) => (
         <List.Item
-          className="bg-white rounded-2xl shadow-sm hover:shadow-md border border-gray-100 mb-4 p-4 transition-all duration-300 flex items-center justify-between"
+          className="bg-white rounded-2xl shadow-sm hover:shadow-md border border-gray-100 mb-4 px-4! transition-all duration-300 flex items-center justify-between"
           actions={[
             <div 
               className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-50 text-gray-500 hover:bg-blue-50 hover:text-blue-600 cursor-pointer transition-colors"
@@ -144,7 +144,7 @@ const CategoryBank = () => {
             </Popconfirm>,
           ]}
         >
-          <div className="flex items-center gap-4 w-full">
+          <div className="flex items-center gap-4">
             <div className={`w-12 h-12 flex-shrink-0 rounded-2xl flex items-center justify-center text-xl font-bold ${
               type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
             }`}>
@@ -190,7 +190,7 @@ const CategoryBank = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen">
       {contextHolder}
       <FullScreenLoader spinning={loading || spinning} />
       
@@ -218,7 +218,7 @@ const CategoryBank = () => {
           />
         </header>
 
-        <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-100 min-h-[60vh]">
+        <div className="min-h-[60vh]">
           <Tabs 
             defaultActiveKey="expense" 
             activeKey={activeTab}

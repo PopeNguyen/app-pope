@@ -150,7 +150,7 @@ const ListTemplate = () => {
       locale={{ emptyText: 'Chưa có mẫu nào' }}
       renderItem={(item) => (
         <List.Item
-          className="bg-white rounded-lg shadow-sm mb-3 border border-gray-100 py-4 px-5 transition-all active:bg-gray-50 flex items-center"
+          className="bg-white rounded-lg shadow-sm mb-3 border border-gray-100 py-4 px-5! transition-all active:bg-gray-50 flex items-center"
           actions={[
             <Button 
                 type="text" 
@@ -233,7 +233,7 @@ const ListTemplate = () => {
   }
 
   return (
-    <div className="p-3 md:p-6 bg-gray-50 min-h-screen">
+    <div className="min-h-screen">
       {contextHolder}
       <FullScreenLoader spinning={loading || spinning} />
       
