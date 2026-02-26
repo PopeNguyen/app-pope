@@ -62,10 +62,13 @@ const VocabularyList = () => {
       const lines = values.bulkInput.trim().split('\n');
       for (const line of lines) {
         const parts = line.split(/\s{2,}|\t/);
-        if (parts.length === 2) {
-          const [word, meaning] = parts;
-          if (word.trim() !== '' && meaning.trim() !== '') {
-            await addWord({ word: word.trim(), meaning: meaning.trim(), uid: user.uid, listId });
+        if (parts.length >= 2) {
+          const word = parts[0]?.trim();
+          const meaning = parts[1]?.trim();
+          const note = parts[2]?.trim() || '';
+
+          if (word !== '' && meaning !== '') {
+            await addWord({ word, meaning, note, uid: user.uid, listId });
           }
         }
       }
@@ -73,9 +76,13 @@ const VocabularyList = () => {
     }
   };
 
-  const handleUpdateWord = async (values: { word: string; meaning: string }) => {
+  const handleUpdateWord = async (values: { word: string; meaning: string; note?: string }) => {
     if (editingWord && values.word.trim() !== '' && values.meaning.trim() !== '') {
-      await updateWord(editingWord.id, { word: values.word.trim(), meaning: values.meaning.trim() });
+      await updateWord(editingWord.id, { 
+        word: values.word.trim(), 
+        meaning: values.meaning.trim(),
+        note: values.note ? values.note.trim() : ''
+      });
       setEditingWord(null);
     }
   };
@@ -124,10 +131,10 @@ const VocabularyList = () => {
                 </Radio.Group>
               }
             >
-              <Paragraph type="secondary">Enter one word and its meaning per line, separated by at least 2 spaces or a tab.</Paragraph>
+              <Paragraph type="secondary">Nhập từ, nghĩa và chú thích trên cùng 1 dòng, cách nhau ít nhất 2 dấu cách hoặc 1 tab.</Paragraph>
               <Form form={addForm} onFinish={handleAddWords}>
                 <Form.Item name="bulkInput" rules={[{ required: true, message: 'Please input words!' }]}>
-                  <TextArea rows={4} placeholder={"word  meaning\nhello  xin chào"} style={{fontSize: 16}} />
+                  <TextArea rows={4} placeholder={"word  meaning  note\nhello  xin chào  dùng để chào hỏi"} style={{fontSize: 16}} />
                 </Form.Item>
                 <Form.Item>
                   <Button type="primary" htmlType="submit" icon={<PlusOutlined />} block size="large">
@@ -168,17 +175,25 @@ const VocabularyList = () => {
                     >
                       {isEditing ? (
                         <Form form={editForm} onFinish={handleUpdateWord} layout="inline" style={{ width: '100%' }}>
-                          <Form.Item name="word" rules={[{ required: true }]} style={{ width: '45%' }}>
+                          <Form.Item name="word" rules={[{ required: true }]} style={{ width: '30%' }}>
                             <Input placeholder="Word" />
                           </Form.Item>
-                          <Form.Item name="meaning" rules={[{ required: true }]} style={{ width: '45%' }}>
+                          <Form.Item name="meaning" rules={[{ required: true }]} style={{ width: '30%' }}>
                             <Input placeholder="Meaning" />
+                          </Form.Item>
+                          <Form.Item name="note" style={{ width: '30%' }}>
+                            <Input placeholder="Note" />
                           </Form.Item>
                         </Form>
                       ) : (
                         <List.Item.Meta
                           title={<Title level={5} style={{ margin: 0 }}>{word.word}</Title>}
-                          description={<Text type="secondary" style={{ fontSize: 16 }}>{word.meaning}</Text>}
+                          description={
+                            <>
+                              <Text type="secondary" style={{ fontSize: 16 }}>{word.meaning}</Text>
+                              {word.note && <div><Text type="secondary" italic>{word.note}</Text></div>}
+                            </>
+                          }
                         />
                       )}
                     </List.Item>
@@ -194,16 +209,24 @@ const VocabularyList = () => {
                       {isEditing ? (
                         <Form form={editForm} onFinish={handleUpdateWord}>
                           <Form.Item name="word" noStyle rules={[{ required: true }]}>
-                            <Input style={{ marginBottom: 8 }} />
+                            <Input style={{ marginBottom: 8 }} placeholder="Word" />
                           </Form.Item>
                           <Form.Item name="meaning" noStyle rules={[{ required: true }]}>
-                            <Input />
+                            <Input style={{ marginBottom: 8 }} placeholder="Meaning" />
+                          </Form.Item>
+                          <Form.Item name="note" noStyle>
+                            <Input placeholder="Note" />
                           </Form.Item>
                         </Form>
                       ) : (
                         <Card.Meta
                           title={<Title level={5}>{word.word}</Title>}
-                          description={<Text type="secondary">{word.meaning}</Text>}
+                          description={
+                            <>
+                              <Text type="secondary">{word.meaning}</Text>
+                              {word.note && <div><Text type="secondary" italic>{word.note}</Text></div>}
+                            </>
+                          }
                         />
                       )}
                     </Card>

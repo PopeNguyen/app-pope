@@ -27,8 +27,7 @@ export const getWords = (uid: string, listId: string, callback: (words: any[]) =
   });
 };
 
-// Add a new word
-export const addWord = (wordData: { word: string; meaning: string; uid: string; listId: string }) => {
+export const addWord = (wordData: { word: string; meaning: string; note?: string; uid: string; listId: string }) => {
   return addDoc(learnEnglishCollectionRef, {
     ...wordData,
     correctCount: 0,
@@ -36,8 +35,7 @@ export const addWord = (wordData: { word: string; meaning: string; uid: string; 
   });
 };
 
-// Update a word's text
-export const updateWord = (wordId: string, updatedData: { word: string; meaning: string }) => {
+export const updateWord = (wordId: string, updatedData: { word: string; meaning: string; note?: string }) => {
   const wordDocRef = doc(db, 'learnEnglish', wordId);
   return updateDoc(wordDocRef, updatedData);
 };

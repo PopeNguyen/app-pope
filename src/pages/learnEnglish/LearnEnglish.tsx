@@ -88,7 +88,7 @@ const LearnEnglish = () => {
           list[`date${i}`] ? (
             <div key={i} className="flex justify-between items-center gap-4 border-b border-gray-50 pb-1 last:border-0 last:pb-0">
               <span className="text-gray-500 font-medium text-xs">Date {i}:</span> 
-              <span className="text-gray-800 text-sm font-semibold">{moment(list[`date${i}`].toDate()).format('YYYY-MM-DD')}</span>
+              <span className="text-gray-800 text-sm font-semibold">{moment(list[`date${i}`].toDate()).format('DD-MM-YYYY')}</span>
             </div>
           ) : null
         ))}

@@ -4,7 +4,7 @@ import { LeftOutlined, RightOutlined, SoundOutlined } from '@ant-design/icons';
 import { speak } from '@/utils/tts';
 import './Flashcard.css';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 interface FlashcardModeProps {
   words: any[];
@@ -44,10 +44,9 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ words, isActive }) => {
   };
 
   useEffect(() => {
-    if (!isActive) return; // Only add listener if this mode is active
+    if (!isActive) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Don't interfere with input fields elsewhere
       if ((event.target as HTMLElement).tagName === 'INPUT' || (event.target as HTMLElement).tagName === 'TEXTAREA') {
         return;
       }
@@ -71,7 +70,7 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ words, isActive }) => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isActive, currentIndex, shuffledWords]); // Re-add listener if state changes
+  }, [isActive, currentIndex, shuffledWords]);
 
   if (shuffledWords.length === 0) {
     return <Title level={3} style={{ textAlign: 'center', marginTop: 50 }}>No words in this list to start flashcards.</Title>;
@@ -93,8 +92,13 @@ const FlashcardMode: React.FC<FlashcardModeProps> = ({ words, isActive }) => {
             />
             <Title level={2}>{currentWord.word}</Title>
           </div>
-          <div className="flashcard-face flashcard-face-back">
-            <Title level={2}>{currentWord.meaning}</Title>
+          <div className="flashcard-face flashcard-face-back" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+            <Title level={2} style={{ margin: 0 }}>{currentWord.meaning}</Title>
+            {currentWord.note && (
+              <Text type="secondary" italic style={{ fontSize: '1.2rem', marginTop: 16 }}>
+                {currentWord.note}
+              </Text>
+            )}
           </div>
         </div>
       </div>
