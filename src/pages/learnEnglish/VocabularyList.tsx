@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { getWords, addWord, updateWord, deleteWords, updateWordStats } from '@/services/learnEnglishService';
 import { useAuth } from '@/hooks/useAuth';
-import { Layout, Typography, Form, Input, Button, List, Card, Modal, Checkbox, Row, Col, Radio, Badge, Tooltip, Space, Alert } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SaveOutlined, ReadOutlined, CreditCardOutlined, UnorderedListOutlined, ArrowLeftOutlined, SoundOutlined, FormOutlined, AppstoreOutlined, RedoOutlined } from '@ant-design/icons';
+import { Layout, Typography, Form, Input, Button, List, Card, Modal, Checkbox, Row, Col, Radio, Space, Alert } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SaveOutlined, ReadOutlined, CreditCardOutlined, UnorderedListOutlined, ArrowLeftOutlined, FormOutlined, AppstoreOutlined, RedoOutlined } from '@ant-design/icons';
 import FullScreenLoader from '@/components/FullScreenLoader';
 import FlashcardMode from '@/components/learnEnglish/FlashcardMode';
 import LearnMode from '@/components/learnEnglish/LearnMode';
@@ -19,8 +19,9 @@ const VocabularyList = () => {
   const [words, setWords] = useState<any[]>([]);
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [editingWord, setEditingWord] = useState<any>(null);
-  const [mode, setMode] = useState('view'); // view, learn, flashcard, retype
-  const [learningWords, setLearningWords] = useState<any[]>([]); // Words for the current session
+  const [mode, setMode] = useState('view');
+  const [viewStyle, setViewStyle] = useState<'grid' | 'list'>('grid');
+  const [learningWords, setLearningWords] = useState<any[]>([]);
   const [learnModeType, setLearnModeType] = useState<'typing' | 'multiple-choice'>('typing');
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [isLearnModeModalVisible, setIsLearnModeModalVisible] = useState(false);
@@ -55,7 +56,6 @@ const VocabularyList = () => {
   const handleWordResult = (wordId: string, isCorrect: boolean) => {
     updateWordStats(wordId, isCorrect);
   };
-
 
   const handleAddWords = async (values: { bulkInput: string }) => {
     if (user && listId && values.bulkInput.trim() !== '') {
@@ -114,8 +114,16 @@ const VocabularyList = () => {
       default:
         return (
           <>
-            <Card style={{ marginBottom: '24px' }}>
-              <Title level={4}>Add New Words</Title>
+            <Card 
+              style={{ marginBottom: '24px' }}
+              title={<Title level={4} style={{ margin: 0 }}>Add New Words</Title>}
+              extra={
+                <Radio.Group value={viewStyle} onChange={(e) => setViewStyle(e.target.value)} buttonStyle="solid">
+                  <Radio.Button value="grid"><AppstoreOutlined /> Dạng Lưới</Radio.Button>
+                  <Radio.Button value="list"><UnorderedListOutlined /> Dạng Danh sách</Radio.Button>
+                </Radio.Group>
+              }
+            >
               <Paragraph type="secondary">Enter one word and its meaning per line, separated by at least 2 spaces or a tab.</Paragraph>
               <Form form={addForm} onFinish={handleAddWords}>
                 <Form.Item name="bulkInput" rules={[{ required: true, message: 'Please input words!' }]}>
@@ -129,25 +137,61 @@ const VocabularyList = () => {
               </Form>
             </Card>
 
-            
-              <List
-                grid={{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 2, xl: 3, xxl: 3 }}
-                dataSource={words}
-                renderItem={word => (
+            <List
+              grid={viewStyle === 'grid' ? { gutter: 16, xs: 1, sm: 1, md: 2, lg: 2, xl: 3, xxl: 3 } : undefined}
+              dataSource={words}
+              renderItem={word => {
+                const isEditing = editingWord?.id === word.id;
+                const isSelected = selectedWords.includes(word.id);
+
+                const actions = [
+                  isEditing ? <SaveOutlined key="save" style={{fontSize: 20}} onClick={() => editForm.submit()} /> : <EditOutlined key="edit" style={{fontSize: 20}} onClick={() => { setEditingWord(word); editForm.setFieldsValue(word); }} />,
+                  <Checkbox 
+                    value={word.id} 
+                    style={{fontSize: 20}}
+                    checked={isSelected}
+                    onChange={(e) => handleSelectWord(word.id, e.target.checked)}
+                  />
+                ];
+
+                if (viewStyle === 'list') {
+                  return (
+                    <List.Item
+                      style={{
+                        background: '#fff',
+                        marginBottom: 12,
+                        padding: '16px 24px',
+                        borderRadius: 8,
+                        border: isSelected ? '1px solid #1890ff' : '1px solid #d9d9d9'
+                      }}
+                      actions={actions}
+                    >
+                      {isEditing ? (
+                        <Form form={editForm} onFinish={handleUpdateWord} layout="inline" style={{ width: '100%' }}>
+                          <Form.Item name="word" rules={[{ required: true }]} style={{ width: '45%' }}>
+                            <Input placeholder="Word" />
+                          </Form.Item>
+                          <Form.Item name="meaning" rules={[{ required: true }]} style={{ width: '45%' }}>
+                            <Input placeholder="Meaning" />
+                          </Form.Item>
+                        </Form>
+                      ) : (
+                        <List.Item.Meta
+                          title={<Title level={5} style={{ margin: 0 }}>{word.word}</Title>}
+                          description={<Text type="secondary" style={{ fontSize: 16 }}>{word.meaning}</Text>}
+                        />
+                      )}
+                    </List.Item>
+                  );
+                }
+
+                return (
                   <List.Item>
                     <Card 
-                      style={{border: selectedWords.includes(word.id) ? '1px solid #1890ff' : '1px solid #d9d9d9'}}
-                      actions={[
-                        editingWord?.id === word.id ? <SaveOutlined key="save" style={{fontSize: 20}} onClick={() => editForm.submit()} /> : <EditOutlined key="edit" style={{fontSize: 20}} onClick={() => { setEditingWord(word); editForm.setFieldsValue(word); }} />,
-                        <Checkbox 
-                        value={word.id} 
-                        style={{fontSize: 20}}
-                        checked={selectedWords.includes(word.id)}
-                        onChange={(e) => handleSelectWord(word.id, e.target.checked)}
-                      />
-                      ]}
+                      style={{border: isSelected ? '1px solid #1890ff' : '1px solid #d9d9d9'}}
+                      actions={actions}
                     >
-                      {editingWord?.id === word.id ? (
+                      {isEditing ? (
                         <Form form={editForm} onFinish={handleUpdateWord}>
                           <Form.Item name="word" noStyle rules={[{ required: true }]}>
                             <Input style={{ marginBottom: 8 }} />
@@ -164,9 +208,9 @@ const VocabularyList = () => {
                       )}
                     </Card>
                   </List.Item>
-                )}
-              />
-            
+                );
+              }}
+            />
           </>
         );
     }
@@ -188,7 +232,6 @@ const VocabularyList = () => {
                 <Text type="secondary">{words.length > 0 ? `${words.length} words` : 'No words yet'}</Text>
               </Col>
               <Col>
-                
               </Col>
             </Row>
             
@@ -220,7 +263,6 @@ const VocabularyList = () => {
                     </Space>
                 </div>
               )}
-
             </Card>
 
             {renderContent()}
@@ -243,7 +285,6 @@ const VocabularyList = () => {
                 showIcon
               />
             </Modal>
-
           </Col>
         </Row>
       </Content>
