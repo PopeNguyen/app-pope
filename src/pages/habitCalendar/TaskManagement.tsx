@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Table,
   Card,
@@ -8,7 +8,6 @@ import {
   Input,
   Select,
   InputNumber,
-  DatePicker,
   Typography,
   Space,
   Tag,
@@ -20,44 +19,25 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
+  ArrowLeftOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import {
+  addHabitTask,
+  deleteHabitTask,
+  subscribeHabitTasks,
+  updateHabitTask,
+} from "@/services/habitTaskService";
+import type {
+  HabitTask,
+  TaskStatus,
+} from "@/services/habitTaskService";
+import { Timestamp } from "firebase/firestore";
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 const { Option } = Select;
-
-type TaskStatus =
-  | "todo"
-  | "in_progress"
-  | "paused"
-  | "completed"
-  | "cancelled";
-
-type TaskType = "day" | "month" | "year";
-
-interface Task {
-  id: string;
-
-  name: string;
-  description?: string;
-
-  targetDuration?: number;
-  actualDuration?: number;
-
-  status: TaskStatus;
-
-  type: TaskType;
-
-  workDate?: Date;
-  workMonth?: number;
-  workYear?: number;
-
-  createdAt: Date;
-  updatedAt: Date;
-
-  deletedAt?: Date;
-  isDeleted: boolean;
-}
 
 const statusColorMap: Record<TaskStatus, string> = {
   todo: "default",
@@ -67,45 +47,32 @@ const statusColorMap: Record<TaskStatus, string> = {
   cancelled: "error",
 };
 
-const fakeTasks: Task[] = [
-  {
-    id: "1",
-    name: "Học tiếng Anh",
-    targetDuration: 120,
-    actualDuration: 45,
-    status: "in_progress",
-    type: "day",
-    workDate: new Date(),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    isDeleted: false,
-  },
-  {
-    id: "2",
-    name: "Làm dự án",
-    targetDuration: 240,
-    actualDuration: 90,
-    status: "todo",
-    type: "month",
-    workMonth: 5,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    isDeleted: false,
-  },
-];
-
 const TaskManagement: React.FC = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [form] = Form.useForm();
 
   const [tasks, setTasks] =
-    useState<Task[]>(fakeTasks);
+    useState<HabitTask[]>([]);
+
+  const [loading, setLoading] = useState(true);
 
   const [selectedTask, setSelectedTask] =
-    useState<Task | null>(null);
+    useState<HabitTask | null>(null);
 
   const [open, setOpen] = useState(false);
 
-  const taskType = Form.useWatch("type", form);
+  useEffect(() => {
+    if (!user) return;
+    
+    setLoading(true);
+    const unsub = subscribeHabitTasks(user.uid, (data) => {
+      setTasks(data);
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, [user]);
 
   const activeTasks = useMemo(() => {
     return tasks.filter(
@@ -120,20 +87,16 @@ const TaskManagement: React.FC = () => {
 
     form.setFieldsValue({
       status: "todo",
-      type: "day",
     });
 
     setOpen(true);
   };
 
-  const openEdit = (task: Task) => {
+  const openEdit = (task: HabitTask) => {
     setSelectedTask(task);
 
     form.setFieldsValue({
-      ...task,
-      workDate: task.workDate
-        ? dayjs(task.workDate)
-        : undefined,
+      ...task
     });
 
     setOpen(true);
@@ -143,108 +106,61 @@ const TaskManagement: React.FC = () => {
     setOpen(false);
   };
 
-  const handleDelete = (
+  const handleDelete = async (
     taskId: string,
   ) => {
-    setTasks((prev) =>
-      prev.map((item) =>
-        item.id === taskId
-          ? {
-              ...item,
-              isDeleted: true,
-              deletedAt: new Date(),
-            }
-          : item,
-      ),
-    );
-
-    message.success("Đã xóa task");
+    try {
+      await deleteHabitTask(taskId);
+      message.success("Đã xóa task");
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      message.error("Lỗi khi xóa task");
+    }
   };
 
   const handleSubmit = async () => {
+    if (!user) return;
     try {
       const values =
         await form.validateFields();
 
-      const payload: Task = {
-        id:
-          selectedTask?.id ??
-          Date.now().toString(),
-
+      const basePayload = {
         name: values.name,
-
-        description:
-          values.description,
-
-        targetDuration:
-          values.targetDuration,
-
-        actualDuration:
-          values.actualDuration,
-
+        description: values.description || null,
+        targetDuration: values.targetDuration || null,
+        actualDuration: values.actualDuration || null,
         status: values.status,
-
-        type: values.type,
-
-        workDate: values.workDate
-          ? values.workDate.toDate()
-          : undefined,
-
-        workMonth:
-          values.workMonth,
-
-        workYear:
-          values.workYear,
-
-        createdAt:
-          selectedTask?.createdAt ??
-          new Date(),
-
-        updatedAt: new Date(),
-
-        deletedAt:
-          selectedTask?.deletedAt,
-
-        isDeleted: false,
+        updatedAt: Timestamp.now(),
       };
 
       if (selectedTask) {
-        setTasks((prev) =>
-          prev.map((item) =>
-            item.id === payload.id
-              ? payload
-              : item,
-          ),
-        );
+        await updateHabitTask(selectedTask.id, basePayload);
+        message.success("Cập nhật thành công");
       } else {
-        setTasks((prev) => [
-          payload,
-          ...prev,
-        ]);
+        const payload: Omit<HabitTask, "id"> = {
+          ...basePayload,
+          uid: user.uid,
+          createdAt: Timestamp.now(),
+          isDeleted: false,
+        };
+        await addHabitTask(payload);
+        message.success("Thêm mới thành công");
       }
 
-      message.success(
-        "Lưu task thành công",
-      );
-
       setOpen(false);
-    } catch {}
+    } catch (error) {
+      console.error("Error saving task:", error);
+      message.error("Lỗi khi lưu task");
+    }
   };
 
-  const columns: ColumnsType<Task> =
+  const columns: ColumnsType<HabitTask> =
     [
       {
         title: "Tên",
         dataIndex: "name",
         width: 220,
       },
-
-      {
-        title: "Loại",
-        dataIndex: "type",
-        width: 100,
-      },
-
       {
         title: "Kế hoạch",
         render: (_, record) =>
@@ -280,7 +196,7 @@ const TaskManagement: React.FC = () => {
         title: "Cập nhật",
         render: (_, record) =>
           dayjs(
-            record.updatedAt,
+            record.updatedAt.toDate(),
           ).format(
             "DD/MM/YYYY HH:mm",
           ),
@@ -329,12 +245,18 @@ const TaskManagement: React.FC = () => {
         bordered={false}
       >
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <Title
-            level={3}
-            className="!mb-0"
-          >
-            Task Management
-          </Title>
+          <Space>
+            <Button 
+              icon={<ArrowLeftOutlined />} 
+              onClick={() => navigate("/app-pope/habit-calendar")}
+            />
+            <Title
+              level={3}
+              className="!mb-0"
+            >
+              Task Management
+            </Title>
+          </Space>
 
           <Button
             type="primary"
@@ -348,6 +270,7 @@ const TaskManagement: React.FC = () => {
         </div>
 
         <Table
+          loading={loading}
           rowKey="id"
           columns={columns}
           dataSource={
@@ -462,90 +385,6 @@ const TaskManagement: React.FC = () => {
               </Option>
             </Select>
           </Form.Item>
-
-          <Form.Item
-            label="Loại"
-            name="type"
-            rules={[
-              {
-                required: true,
-              },
-            ]}
-          >
-            <Select>
-              <Option value="day">
-                Day
-              </Option>
-
-              <Option value="month">
-                Month
-              </Option>
-
-              <Option value="year">
-                Year
-              </Option>
-            </Select>
-          </Form.Item>
-
-          {taskType ===
-            "day" && (
-            <Form.Item
-              label="Ngày làm"
-              name="workDate"
-              rules={[
-                {
-                  required: true,
-                  message:
-                    "Chọn ngày",
-                },
-              ]}
-            >
-              <DatePicker
-                className="!w-full"
-              />
-            </Form.Item>
-          )}
-
-          {taskType ===
-            "month" && (
-            <Form.Item
-              label="Tháng làm"
-              name="workMonth"
-              rules={[
-                {
-                  required: true,
-                  message:
-                    "Nhập tháng",
-                },
-              ]}
-            >
-              <InputNumber
-                min={1}
-                max={12}
-                className="!w-full"
-              />
-            </Form.Item>
-          )}
-
-          {taskType ===
-            "year" && (
-            <Form.Item
-              label="Năm làm"
-              name="workYear"
-              rules={[
-                {
-                  required: true,
-                  message:
-                    "Nhập năm",
-                },
-              ]}
-            >
-              <InputNumber
-                min={2020}
-                className="!w-full"
-              />
-            </Form.Item>
-          )}
         </Form>
       </Drawer>
     </div>
