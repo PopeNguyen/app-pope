@@ -16,6 +16,8 @@ import ListTemplate from '@/pages/money/ListTemplate';
 import ListProject from '@/pages/learnEnglish/LearnEnglish';
 import VocabularyList from '@/pages/learnEnglish/VocabularyList';
 import HabitCalendar from '@/pages/habitCalendar';
+import TaskManagement from '@/pages/habitCalendar/TaskManagement';
+import SessionManagement from '@/pages/habitCalendar/SessionManagement';
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -49,6 +51,8 @@ const router = createBrowserRouter([
       { path: 'learn-english', element: withAuth(<ListProject />) },
       { path: 'learn-english/:listId', element: withAuth(<VocabularyList />) },
       { path: 'habit-calendar', element: withAuth(<HabitCalendar />) },
+      { path: 'task-management', element: withAuth(<TaskManagement />) },
+      { path: 'session-management', element: withAuth(<SessionManagement />) },
     ],
   },
 ]);
