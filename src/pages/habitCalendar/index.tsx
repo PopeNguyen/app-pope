@@ -2,28 +2,29 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
-  Timeline,
-  Progress,
   Typography,
   Button,
-  message,
   Space,
   Statistic,
   Row,
   Col,
   Tag,
+  message,
 } from "antd";
 import {
   CheckCircleFilled,
   PlayCircleFilled,
   ClockCircleOutlined,
+  PauseCircleFilled,
+  CloseCircleFilled,
   CheckOutlined,
+  CloseOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "@/hooks/useAuth";
-import { subscribeSessions } from "@/services/sessionService";
-import type { PhienLamViec } from "@/services/sessionService";
-import { subscribeHabitTasks } from "@/services/habitTaskService";
-import type { HabitTask } from "@/services/habitTaskService";
+import { subscribeSessions, updateSession } from "@/services/sessionService";
+import type { PhienLamViec, TrangThaiPhien } from "@/services/sessionService";
+import { updateTaskDuration } from "@/services/habitTaskService";
+import { Timestamp } from "firebase/firestore";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
@@ -36,14 +37,9 @@ const formatMinutes = (minutes: number | null | undefined) => {
   if (minutes >= 60) {
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
-
-    if (m === 0) {
-      return `${h}h`;
-    }
-
+    if (m === 0) return `${h}h`;
     return `${h}h ${m}m`;
   }
-
   return `${minutes}m`;
 };
 
@@ -56,161 +52,157 @@ const tinhThoiLuong = (batDau: string, ketThuc: string) => {
 // ============================
 // Components
 // ============================
-const TimelineSection: React.FC<{ sessions: PhienLamViec[] }> = ({ sessions }) => {
-  const renderIcon = (
-    trangThai: PhienLamViec["trangThai"],
-  ) => {
-    if (trangThai === "hoan_thanh") {
-      return (
-        <CheckCircleFilled className="text-gray-400" />
-      );
-    }
+const SessionsBlockSection: React.FC<{ sessions: PhienLamViec[] }> = ({ sessions }) => {
+  const [now, setNow] = useState(dayjs());
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-    if (trangThai === "dang_thuc_hien") {
-      return (
-        <PlayCircleFilled className="text-[#1677ff]" />
-      );
-    }
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(dayjs());
+    }, 60000);
+    return () => clearInterval(timer);
+  }, []);
 
-    return (
-      <div className="h-3 w-3 rounded-full border border-gray-400 bg-white" />
-    );
+  const isCurrentSession = (batDau: string, ketThuc: string) => {
+    const start = dayjs(batDau, "HH:mm");
+    const end = dayjs(ketThuc, "HH:mm");
+    const currentMins = now.hour() * 60 + now.minute();
+    const startMins = start.hour() * 60 + start.minute();
+    const endMins = end.hour() * 60 + end.minute();
+
+    return currentMins >= startMins && currentMins < endMins;
+  };
+
+  const handleUpdateStatus = async (e: React.MouseEvent, session: PhienLamViec, newStatus: TrangThaiPhien) => {
+    e.stopPropagation(); // Ngăn sự kiện click block bên ngoài
+    try {
+      await updateSession(session.id, { 
+        trangThai: newStatus, 
+        thoiGianCapNhat: Timestamp.now() 
+      });
+
+      // Nếu hoàn thành, cộng thời gian vào task liên kết
+      if (newStatus === "hoan_thanh" && session.taskId) {
+        const duration = tinhThoiLuong(session.gioBatDau, session.gioKetThuc);
+        await updateTaskDuration(session.taskId, duration);
+      }
+
+      message.success("Đã cập nhật trạng thái");
+    } catch (error) {
+      console.error(error);
+      message.error("Lỗi khi cập nhật");
+    }
+  };
+
+  const renderStatusIcon = (trangThai: PhienLamViec["trangThai"]) => {
+    switch (trangThai) {
+      case "hoan_thanh": return <CheckCircleFilled className="text-green-500 text-lg" />;
+      case "dang_thuc_hien": return <PlayCircleFilled className="text-blue-500 text-lg" />;
+      case "tam_dung": return <PauseCircleFilled className="text-yellow-500 text-lg" />;
+      case "huy": return <CloseCircleFilled className="text-red-500 text-lg" />;
+      default: return <div className="h-4 w-4 rounded-full border-2 border-gray-300 bg-white" />;
+    }
   };
 
   return (
     <Card
       bordered={false}
-      className="h-full rounded-3xl border border-gray-200 bg-white shadow-sm"
+      className="h-full w-full rounded-3xl border border-gray-200 bg-white shadow-sm"
     >
-      <Title
-        level={4}
-        className="!mb-8 !text-black"
-      >
-        Today Sessions
-      </Title>
+      <div className="mb-6 flex items-center justify-between">
+        <Title level={4} className="!mb-0 !text-black">
+          Today Sessions
+        </Title>
+        <Text className="!text-gray-500 font-medium">
+          {now.format("HH:mm")}
+        </Text>
+      </div>
 
       {sessions.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-10">
           <Text type="secondary">Chưa có phiên làm việc nào hôm nay</Text>
         </div>
       ) : (
-        <Timeline
-          items={sessions.map((session) => ({
-            dot: renderIcon(session.trangThai),
-
-            children: (
-              <div
-                className={`rounded-2xl p-4 transition-all ${
-                  session.trangThai === "dang_thuc_hien"
-                    ? "bg-blue-50"
-                    : ""
-                }`}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <Text
-                      className={`!block !font-semibold ${
-                        session.trangThai === "dang_thuc_hien"
-                          ? "!text-[#1677ff]"
-                          : "!text-black"
-                      }`}
-                    >
-                      {session.gioBatDau} - {session.gioKetThuc}
-                    </Text>
-                    <Text className="!text-gray-500">
-                      {session.ten}
-                    </Text>
-                  </div>
-                  <Tag color="default">
-                    {tinhThoiLuong(session.gioBatDau, session.gioKetThuc)}m
-                  </Tag>
-                </div>
-              </div>
-            ),
-          }))}
-        />
-      )}
-    </Card>
-  );
-};
-
-const TasksSection: React.FC<{ tasks: HabitTask[] }> = ({ tasks }) => {
-  const completedCount = tasks.filter(
-    (item) => item.status === "completed" || ((item.actualDuration || 0) >= (item.targetDuration || 0) && item.targetDuration && item.targetDuration > 0)
-  ).length;
-
-  const totalProgress = useMemo(() => {
-    if (tasks.length === 0) return 0;
-    return Math.round(
-      (completedCount / tasks.length) * 100,
-    );
-  }, [completedCount, tasks.length]);
-
-  return (
-    <Card
-      bordered={false}
-      className="h-full rounded-3xl border border-gray-200 bg-white shadow-sm"
-    >
-      <div className="mb-6 flex items-center justify-between">
-        <Title
-          level={4}
-          className="!mb-0 !text-black"
-        >
-          Today's Active Tasks
-        </Title>
-
-        <Text className="!text-gray-500">
-          {completedCount}/{tasks.length}
-        </Text>
-      </div>
-
-      <Progress
-        percent={totalProgress}
-        showInfo={false}
-        strokeColor="#1677ff"
-        className="mb-8"
-      />
-
-      <div className="space-y-6">
-        {tasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10">
-            <Text type="secondary">Không có task nào được thực hiện hôm nay</Text>
-          </div>
-        ) : (
-          tasks.map((task) => {
-            const current = task.actualDuration || 0;
-            const target = task.targetDuration || 0;
-            const percent = target > 0 ? Math.round((current / target) * 100) : 0;
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {sessions.map((session) => {
+            const isHighlight = isCurrentSession(session.gioBatDau, session.gioKetThuc);
+            const isFinished = session.trangThai === "hoan_thanh" || session.trangThai === "huy";
+            const isExpanded = expandedId === session.id;
 
             return (
-              <div key={task.id}>
-                <div className="mb-2 flex items-center justify-between">
-                  <Text className="!font-medium !text-black">
-                    {task.name}
+              <div
+                key={session.id}
+                onClick={() => setExpandedId(isExpanded ? null : session.id)}
+                className={`cursor-pointer flex flex-col justify-between gap-3 rounded-2xl border-2 p-3 sm:p-4 transition-all duration-300 ${
+                  isHighlight
+                    ? "border-blue-400 bg-blue-50 shadow-md scale-[1.01]"
+                    : "border-gray-100 bg-white hover:border-gray-200"
+                }`}
+              >
+                {/* Dòng thông tin ngang (Icon, Giờ, Tên, Thời lượng) */}
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  {renderStatusIcon(session.trangThai)}
+                  <Text className={`!font-bold ${isHighlight ? "!text-blue-600" : "!text-black"}`}>
+                    {session.gioBatDau} - {session.gioKetThuc}
                   </Text>
-
-                  <Text className="!text-gray-500">
-                    {task.status === "completed" ? "100%" : `${percent}%`}
+                  <Text 
+                    className={`!font-medium truncate flex-1 min-w-[80px] ${isHighlight ? "!text-blue-800" : "!text-gray-700"}`}
+                    title={session.ten}
+                  >
+                    {session.ten}
                   </Text>
+                  <Tag color={isHighlight ? "blue" : "default"} className="!m-0">
+                    {tinhThoiLuong(session.gioBatDau, session.gioKetThuc)} phút
+                  </Tag>
                 </div>
 
-                <div className="mb-3">
-                  <Text className="!text-gray-500">
-                    {formatMinutes(current)} /{" "}
-                    {formatMinutes(target)}
+                {/* Ghi chú */}
+                {session.ghiChu && (
+                  <Text className="!block !text-sm !text-gray-500 pl-6 line-clamp-2">
+                    {session.ghiChu}
                   </Text>
-                </div>
+                )}
 
-                <Progress
-                  percent={task.status === "completed" ? 100 : percent}
-                  showInfo={false}
-                  strokeColor={task.status === "completed" ? "#52c41a" : "#1677ff"}
-                />
+                {/* Nút hành động (Chỉ hiện khi click vào block) */}
+                {isExpanded && (
+                  <div className="mt-2 flex gap-2 border-t border-gray-100 pt-3 animate-fade-in">
+                    {!isFinished && (
+                      <>
+                        <Button
+                          type="primary"
+                          className="flex-1 bg-green-500"
+                          icon={<CheckOutlined />}
+                          onClick={(e) => handleUpdateStatus(e, session, "hoan_thanh")}
+                        >
+                          Xong
+                        </Button>
+                        <Button
+                          danger
+                          className="flex-1"
+                          icon={<CloseOutlined />}
+                          onClick={(e) => handleUpdateStatus(e, session, "huy")}
+                        >
+                          Hủy
+                        </Button>
+                      </>
+                    )}
+                    {session.trangThai === "hoan_thanh" && (
+                      <Tag color="success" className="w-full !m-0 py-1 text-center font-medium">
+                        Đã hoàn thành
+                      </Tag>
+                    )}
+                    {session.trangThai === "huy" && (
+                      <Tag color="error" className="w-full !m-0 py-1 text-center font-medium">
+                        Đã hủy bỏ
+                      </Tag>
+                    )}
+                  </div>
+                )}
               </div>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </Card>
   );
 };
@@ -222,14 +214,10 @@ const TodayDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [sessions, setSessions] = useState<PhienLamViec[]>([]);
-  const [allTasks, setAllTasks] = useState<HabitTask[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
     
-    setLoading(true);
-
     const unsubSessions = subscribeSessions(user.uid, (data) => {
       const today = dayjs().startOf("day");
       const todaySessions = data.filter((s) =>
@@ -237,24 +225,12 @@ const TodayDashboard: React.FC = () => {
       ).sort((a, b) => a.gioBatDau.localeCompare(b.gioBatDau));
       
       setSessions(todaySessions);
-      setLoading(false);
-    });
-
-    const unsubTasks = subscribeHabitTasks(user.uid, (data) => {
-      setAllTasks(data);
     });
 
     return () => {
       unsubSessions();
-      unsubTasks();
     };
   }, [user]);
-
-  const todayTasks = useMemo(() => {
-    if (!allTasks.length) return [];
-    const todaySessionTaskIds = new Set(sessions.map(s => s.taskId).filter(Boolean));
-    return allTasks.filter(t => todaySessionTaskIds.has(t.id as string));
-  }, [allTasks, sessions]);
 
   const stats = useMemo(() => {
     const totalMinutes = sessions.reduce((acc, s) => {
@@ -264,37 +240,32 @@ const TodayDashboard: React.FC = () => {
       return acc;
     }, 0);
 
-    const completedTasks = todayTasks.filter(t => t.status === "completed").length;
-
     return {
       totalTime: formatMinutes(totalMinutes),
-      completedTasks,
-      totalSessions: sessions.filter(s => s.trangThai === "hoan_thanh").length
+      totalSessions: sessions.filter(s => s.trangThai === "hoan_thanh").length,
+      allSessionsCount: sessions.length
     };
-  }, [sessions, todayTasks]);
+  }, [sessions]);
 
   return (
-    <div className="min-h-screen w-full bg-[#f8fafc] p-4 sm:p-6 lg:p-8 xl:p-10">
+    <div className="min-h-screen w-full bg-[#f8fafc] p-3 sm:p-6 lg:p-8">
       
       {/* Action Buttons Header */}
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <Title level={2} className="!mb-0">My Dashboard</Title>
-        <Space>
+        <Space className="w-full sm:w-auto overflow-x-auto pb-1">
           <Button 
             type="primary" 
-            size="large"
             onClick={() => navigate("/app-pope/task-management")}
           >
             Quản lý Task
           </Button>
           <Button 
-            size="large"
             onClick={() => navigate("/app-pope/session-management")}
           >
             Quản lý Phiên
           </Button>
           <Button 
-            size="large"
             onClick={() => navigate("/app-pope/template-management")}
           >
             Quản lý Mẫu
@@ -303,9 +274,9 @@ const TodayDashboard: React.FC = () => {
       </div>
 
       {/* Stats Summary */}
-      <Row gutter={[16, 16]} className="mb-8">
-        <Col xs={24} sm={8}>
-          <Card bordered={false} className="rounded-3xl shadow-sm">
+      <Row gutter={[12, 12]} className="mb-6">
+        <Col xs={24} sm={12}>
+          <Card bordered={false} className="rounded-2xl shadow-sm">
             <Statistic
               title="Tổng thời gian đã làm"
               value={stats.totalTime}
@@ -314,34 +285,21 @@ const TodayDashboard: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={8}>
-          <Card bordered={false} className="rounded-3xl shadow-sm">
+        <Col xs={24} sm={12}>
+          <Card bordered={false} className="rounded-2xl shadow-sm">
             <Statistic
               title="Phiên đã hoàn thành"
-              value={stats.totalSessions}
+              value={`${stats.totalSessions} / ${stats.allSessionsCount}`}
               prefix={<PlayCircleFilled />}
               valueStyle={{ color: '#52c41a' }}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={8}>
-          <Card bordered={false} className="rounded-3xl shadow-sm">
-            <Statistic
-              title="Task đã xong"
-              value={stats.completedTasks}
-              prefix={<CheckOutlined />}
-              valueStyle={{ color: '#faad14' }}
-            />
-          </Card>
-        </Col>
       </Row>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        {/* Left */}
-        <TimelineSection sessions={sessions} />
-
-        {/* Right */}
-        <TasksSection tasks={todayTasks} />
+      {/* Sessions Block */}
+      <div className="w-full">
+        <SessionsBlockSection sessions={sessions} />
       </div>
     </div>
   );

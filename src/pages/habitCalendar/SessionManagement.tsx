@@ -77,6 +77,7 @@ const SessionManagement: React.FC = () => {
 
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [selectedTemplateDay, setSelectedTemplateDay] = useState<number | null>(null);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -107,7 +108,8 @@ const SessionManagement: React.FC = () => {
       .filter((item) => !item.daXoa)
       .filter((item) =>
         dayjs(item.ngayLam.toDate()).isSame(ngayLoc, "day")
-      );
+      )
+      .sort((a, b) => a.gioBatDau.localeCompare(b.gioBatDau));
   }, [danhSach, ngayLoc]);
 
   const moModalApDungMau = () => {
@@ -136,7 +138,6 @@ const SessionManagement: React.FC = () => {
       message.success(`Đã áp dụng mẫu thành công cho ngày ${ngayLoc.format("DD/MM/YYYY")}!`);
       setIsTemplateModalOpen(false);
     } catch (error) {
-      console.error("Error applying template:", error);
       message.error("Có lỗi xảy ra khi áp dụng mẫu.");
     }
   };
@@ -172,9 +173,32 @@ const SessionManagement: React.FC = () => {
       }
       
       message.success("Đã xóa phiên");
+      setSelectedRowKeys(prev => prev.filter(key => key !== record.id));
     } catch (error) {
-      console.error("Error deleting session:", error);
       message.error("Lỗi khi xóa phiên");
+    }
+  };
+
+  const xoaNhiemPhien = async () => {
+    if (selectedRowKeys.length === 0) return;
+    try {
+      const deletePromises = selectedRowKeys.map(async (key) => {
+        const record = danhSach.find((item) => item.id === key);
+        if (!record) return;
+
+        await deleteSession(record.id);
+
+        if (record.trangThai === "hoan_thanh" && record.taskId) {
+          const duration = tinhThoiLuong(record.gioBatDau, record.gioKetThuc);
+          await updateTaskDuration(record.taskId, -duration);
+        }
+      });
+
+      await Promise.all(deletePromises);
+      message.success(`Đã xóa ${selectedRowKeys.length} phiên`);
+      setSelectedRowKeys([]);
+    } catch (error) {
+      message.error("Lỗi khi xóa nhiều phiên");
     }
   };
 
@@ -242,7 +266,6 @@ const SessionManagement: React.FC = () => {
 
       setOpen(false);
     } catch (error) {
-      console.error("Error saving session:", error);
       message.error("Lỗi khi lưu phiên");
     }
   };
@@ -305,6 +328,13 @@ const SessionManagement: React.FC = () => {
     },
   ];
 
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (newSelectedRowKeys: React.Key[]) => {
+      setSelectedRowKeys(newSelectedRowKeys);
+    },
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6">
       <Card bordered={false} className="rounded-3xl">
@@ -328,6 +358,18 @@ const SessionManagement: React.FC = () => {
                 setNgayLoc(value);
               }}
             />
+            
+            {selectedRowKeys.length > 0 && (
+              <Popconfirm
+                title={`Bạn có chắc chắn muốn xóa ${selectedRowKeys.length} phiên đã chọn?`}
+                onConfirm={xoaNhiemPhien}
+              >
+                <Button danger icon={<DeleteOutlined />}>
+                  Xóa ({selectedRowKeys.length})
+                </Button>
+              </Popconfirm>
+            )}
+
             <Button onClick={moModalApDungMau}>
               Áp dụng mẫu
             </Button>
@@ -342,11 +384,13 @@ const SessionManagement: React.FC = () => {
         </div>
 
         <Table
+          rowSelection={rowSelection}
           loading={loading}
           rowKey="id"
           columns={columns}
           dataSource={data}
           scroll={{ x: 1000 }}
+          pagination={false}
         />
       </Card>
 
