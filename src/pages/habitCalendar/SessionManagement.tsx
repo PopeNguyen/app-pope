@@ -14,6 +14,7 @@ import {
   Typography,
   Popconfirm,
   message,
+  Modal,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import {
@@ -39,6 +40,11 @@ import type {
 import { subscribeHabitTasks, updateTaskDuration } from "@/services/habitTaskService";
 import type { HabitTask } from "@/services/habitTaskService";
 import { Timestamp } from "firebase/firestore";
+import {
+  applySessionTemplate,
+  subscribeSessionTemplates,
+  type SessionTemplate,
+} from "@/services/sessionTemplateService";
 
 const { Title, Text } = Typography;
 
@@ -72,6 +78,7 @@ const SessionManagement: React.FC =
       >([]);
     
     const [tasks, setTasks] = useState<HabitTask[]>([]);
+    const [templates, setTemplates] = useState<SessionTemplate[]>([]);
 
     const [loading, setLoading] = useState(true);
 
@@ -107,10 +114,15 @@ const SessionManagement: React.FC =
       const unsubTasks = subscribeHabitTasks(user.uid, (data) => {
         setTasks(data);
       });
+      
+      const unsubTemplates = subscribeSessionTemplates(user.uid, (data) => {
+        setTemplates(data);
+      });
 
       return () => {
         unsubSessions();
         unsubTasks();
+        unsubTemplates();
       };
     }, [user]);
 
@@ -135,6 +147,38 @@ const SessionManagement: React.FC =
         ngayLoc,
       ]);
 
+    const handleApplyTemplate = () => {
+      const dayOfWeek = ngayLoc.day(); // 0 for Sunday, 1 for Monday...
+      const templateToApply = templates.find(t => t.dayOfWeek === dayOfWeek);
+
+      if (!templateToApply) {
+        message.warning("Không tìm thấy mẫu cho ngày này.");
+        return;
+      }
+      
+      if (!templateToApply.sessions || templateToApply.sessions.length === 0) {
+        message.info("Mẫu cho ngày này không có phiên nào.");
+        return;
+      }
+
+      Modal.confirm({
+        title: `Áp dụng mẫu cho ngày ${ngayLoc.format("DD/MM/YYYY")}?`,
+        content: `Hệ thống sẽ tạo ${templateToApply.sessions.length} phiên làm việc mới. Các phiên hiện tại của ngày này sẽ không bị ảnh hưởng.`,
+        okText: "Áp dụng",
+        cancelText: "Hủy",
+        onOk: async () => {
+          try {
+            if (!user) return;
+            await applySessionTemplate(user.uid, templateToApply, ngayLoc.toDate());
+            message.success("Đã áp dụng mẫu thành công!");
+          } catch (error) {
+            console.error("Error applying template:", error);
+            message.error("Có lỗi xảy ra khi áp dụng mẫu.");
+          }
+        },
+      });
+    };
+    
     const moTaoMoi =
       () => {
         setPhienDangSua(
@@ -441,7 +485,9 @@ const SessionManagement: React.FC =
                   );
                 }}
               />
-
+              <Button onClick={handleApplyTemplate}>
+                Áp dụng mẫu
+              </Button>
               <Button
                 type="primary"
                 icon={

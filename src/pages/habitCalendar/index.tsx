@@ -31,7 +31,7 @@ const { Title, Text } = Typography;
 // ============================
 // Helpers
 // ============================
-const formatMinutes = (minutes: number) => {
+const formatMinutes = (minutes: number | null | undefined) => {
   if (!minutes) return "0m";
   if (minutes >= 60) {
     const h = Math.floor(minutes / 60);
@@ -41,7 +41,7 @@ const formatMinutes = (minutes: number) => {
       return `${h}h`;
     }
 
-    return `${h}h${m}m`;
+    return `${h}h ${m}m`;
   }
 
   return `${minutes}m`;
@@ -229,10 +229,9 @@ const TodayDashboard: React.FC = () => {
     if (!user) return;
     
     setLoading(true);
-    
-    const today = dayjs().startOf("day");
 
     const unsubSessions = subscribeSessions(user.uid, (data) => {
+      const today = dayjs().startOf("day");
       const todaySessions = data.filter((s) =>
         dayjs(s.ngayLam.toDate()).isSame(today, "day")
       ).sort((a, b) => a.gioBatDau.localeCompare(b.gioBatDau));
@@ -252,7 +251,7 @@ const TodayDashboard: React.FC = () => {
   }, [user]);
 
   const todayTasks = useMemo(() => {
-    if (!allTasks.length || !sessions.length) return [];
+    if (!allTasks.length) return [];
     const todaySessionTaskIds = new Set(sessions.map(s => s.taskId).filter(Boolean));
     return allTasks.filter(t => todaySessionTaskIds.has(t.id as string));
   }, [allTasks, sessions]);
@@ -293,6 +292,12 @@ const TodayDashboard: React.FC = () => {
             onClick={() => navigate("/app-pope/session-management")}
           >
             Quản lý Phiên
+          </Button>
+          <Button 
+            size="large"
+            onClick={() => navigate("/app-pope/template-management")}
+          >
+            Quản lý Mẫu
           </Button>
         </Space>
       </div>

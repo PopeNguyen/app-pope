@@ -3,21 +3,21 @@ import Home from '@/pages/home/Home';
 import Register from '@/pages/Register';
 import Login from '@/pages/Login';
 import TodoList from '@/pages/todolist/Todolist';
-import MainLayout from '@/layouts/MainLayout';
 import NotFound from '@/pages/NotFound';
 import Money from '@/pages/money/Money';
 import Casino from '@/pages/casino/Casino';
 import CasinoMatch from '@/pages/casino/CasinoMatch';
-
-import { withAuth } from '@/utils/withAuth';
 import AccountBank from '@/pages/money/AccountBank';
 import CategoryBank from '@/pages/money/CategoryBank';
 import ListTemplate from '@/pages/money/ListTemplate';
 import ListProject from '@/pages/learnEnglish/LearnEnglish';
 import VocabularyList from '@/pages/learnEnglish/VocabularyList';
 import HabitCalendar from '@/pages/habitCalendar';
-import TaskManagement from '@/pages/habitCalendar/TaskManagement';
 import SessionManagement from '@/pages/habitCalendar/SessionManagement';
+import TaskManagement from '@/pages/habitCalendar/TaskManagement';
+import TemplateManagement from '@/pages/habitCalendar/TemplateManagement';
+import MainLayout from '@/layouts/MainLayout';
+import { withAuth } from '@/utils/withAuth';
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -53,6 +53,7 @@ const router = createBrowserRouter([
       { path: 'habit-calendar', element: withAuth(<HabitCalendar />) },
       { path: 'task-management', element: withAuth(<TaskManagement />) },
       { path: 'session-management', element: withAuth(<SessionManagement />) },
+      { path: 'template-management', element: withAuth(<TemplateManagement />) },
     ],
   },
 ]);
