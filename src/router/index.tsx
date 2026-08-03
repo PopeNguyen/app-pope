@@ -16,6 +16,7 @@ import HabitCalendar from '@/pages/habitCalendar';
 import SessionManagement from '@/pages/habitCalendar/SessionManagement';
 import TaskManagement from '@/pages/habitCalendar/TaskManagement';
 import TemplateManagement from '@/pages/habitCalendar/TemplateManagement';
+import MemorizeDashboard from '@/pages/memorize/MemorizeDashboard';
 import MainLayout from '@/layouts/MainLayout';
 import { withAuth } from '@/utils/withAuth';
 
@@ -54,6 +55,7 @@ const router = createBrowserRouter([
       { path: 'task-management', element: withAuth(<TaskManagement />) },
       { path: 'session-management', element: withAuth(<SessionManagement />) },
       { path: 'template-management', element: withAuth(<TemplateManagement />) },
+      { path: 'memorize', element: withAuth(<MemorizeDashboard />) },
     ],
   },
 ]);
