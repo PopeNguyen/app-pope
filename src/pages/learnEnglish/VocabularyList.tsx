@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { getWords, addWord, updateWord, deleteWords, updateWordStats } from '@/services/learnEnglishService';
 import { useAuth } from '@/hooks/useAuth';
 import { Layout, Typography, Form, Input, Button, List, Card, Modal, Checkbox, Row, Col, Radio, Space, Alert } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SaveOutlined, ReadOutlined, CreditCardOutlined, UnorderedListOutlined, ArrowLeftOutlined, FormOutlined, AppstoreOutlined, RedoOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SaveOutlined, ReadOutlined, CreditCardOutlined, UnorderedListOutlined, ArrowLeftOutlined, FormOutlined, AppstoreOutlined, RedoOutlined, SoundOutlined } from '@ant-design/icons';
 import FullScreenLoader from '@/components/FullScreenLoader';
 import FlashcardMode from '@/components/learnEnglish/FlashcardMode';
 import LearnMode from '@/components/learnEnglish/LearnMode';
@@ -41,6 +41,14 @@ const VocabularyList = () => {
       setLoading(false);
     }
   }, [user, listId]);
+
+  const handlePronounce = (text: string) => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      window.speechSynthesis.speak(utterance);
+    }
+  };
 
   const handleStartLearnSession = () => {
     setIsLearnModeModalVisible(true);
@@ -187,7 +195,17 @@ const VocabularyList = () => {
                         </Form>
                       ) : (
                         <List.Item.Meta
-                          title={<Title level={5} style={{ margin: 0 }}>{word.word}</Title>}
+                          title={
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                              <Title level={5} style={{ margin: 0 }}>{word.word}</Title>
+                              <Button 
+                                type="text" 
+                                icon={<SoundOutlined />} 
+                                onClick={() => handlePronounce(word.word)}
+                                style={{ marginLeft: 8 }}
+                              />
+                            </div>
+                          }
                           description={
                             <>
                               <Text type="secondary" style={{ fontSize: 16 }}>{word.meaning}</Text>
@@ -220,7 +238,16 @@ const VocabularyList = () => {
                         </Form>
                       ) : (
                         <Card.Meta
-                          title={<Title level={5}>{word.word}</Title>}
+                          title={
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <Title level={5} style={{ margin: 0 }}>{word.word}</Title>
+                              <Button 
+                                type="text" 
+                                icon={<SoundOutlined />} 
+                                onClick={() => handlePronounce(word.word)}
+                              />
+                            </div>
+                          }
                           description={
                             <>
                               <Text type="secondary">{word.meaning}</Text>
