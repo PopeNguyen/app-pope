@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { getWords, addWord, updateWord, deleteWords, updateWordStats } from '@/services/learnEnglishService';
 import { useAuth } from '@/hooks/useAuth';
 import { Layout, Typography, Form, Input, Button, List, Card, Modal, Checkbox, Row, Col, Radio, Space, Alert } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SaveOutlined, ReadOutlined, CreditCardOutlined, UnorderedListOutlined, ArrowLeftOutlined, FormOutlined, AppstoreOutlined, RedoOutlined, SoundOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SaveOutlined, ReadOutlined, CreditCardOutlined, UnorderedListOutlined, ArrowLeftOutlined, FormOutlined, AppstoreOutlined, RedoOutlined, SoundOutlined, CopyOutlined } from '@ant-design/icons';
 import FullScreenLoader from '@/components/FullScreenLoader';
 import FlashcardMode from '@/components/learnEnglish/FlashcardMode';
 import LearnMode from '@/components/learnEnglish/LearnMode';
@@ -33,7 +33,10 @@ const VocabularyList = () => {
     if (user && listId) {
       setLoading(true);
       const unsubscribe = getWords(user.uid, listId, (fetchedWords) => {
-        setWords(fetchedWords);
+        const sortedWords = [...fetchedWords].sort((a, b) => 
+          (b.createdAt || '').localeCompare(a.createdAt || '')
+        );
+        setWords(sortedWords);
         setLoading(false);
       });
       return () => unsubscribe();
@@ -46,6 +49,24 @@ const VocabularyList = () => {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'en-US';
+      
+      const voices = window.speechSynthesis.getVoices();
+      // Try to find a known female voice for English
+      const femaleVoice = voices.find(voice => 
+        voice.lang.startsWith('en') && 
+        (voice.name.includes('Zira') || voice.name.includes('Samantha') || voice.name.includes('Google US English') || voice.name.includes('Victoria'))
+      );
+      
+      if (femaleVoice) {
+        utterance.voice = femaleVoice;
+      } else {
+        // Fallback to the first available English voice
+        const anyEnVoice = voices.find(voice => voice.lang === 'en-US' || voice.lang.startsWith('en'));
+        if (anyEnVoice) {
+          utterance.voice = anyEnVoice;
+        }
+      }
+
       window.speechSynthesis.speak(utterance);
     }
   };
@@ -117,6 +138,17 @@ const VocabularyList = () => {
     }
   };
 
+  const handleCopyWords = () => {
+    if (words.length === 0) {
+      message.warning('Không có từ vựng nào để sao chép!');
+      return;
+    }
+    const textToCopy = words.map(w => w.word).join('\n');
+    navigator.clipboard.writeText(textToCopy)
+      .then(() => message.success('Đã sao chép danh sách từ vựng!'))
+      .catch(() => message.error('Sao chép thất bại.'));
+  };
+
   const renderContent = () => {
     switch (mode) {
       case 'learn':
@@ -132,14 +164,17 @@ const VocabularyList = () => {
             <Card 
               style={{ marginBottom: '24px' }}
               title={<Title level={4} style={{ margin: 0 }}>Add New Words</Title>}
-              extra={
-                <Radio.Group value={viewStyle} onChange={(e) => setViewStyle(e.target.value)} buttonStyle="solid">
-                  <Radio.Button value="grid"><AppstoreOutlined /> Dạng Lưới</Radio.Button>
-                  <Radio.Button value="list"><UnorderedListOutlined /> Dạng Danh sách</Radio.Button>
-                </Radio.Group>
-              }
             >
-              <Paragraph type="secondary">Nhập từ, nghĩa và chú thích trên cùng 1 dòng, cách nhau ít nhất 2 dấu cách hoặc 1 tab.</Paragraph>
+              <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'center' }}>
+                <Paragraph type="secondary" style={{ margin: 0, flex: '1 1 100%' }}>Nhập từ, nghĩa và chú thích trên cùng 1 dòng, cách nhau ít nhất 2 dấu cách hoặc 1 tab.</Paragraph>
+                <Space wrap>
+                  <Button icon={<CopyOutlined />} onClick={handleCopyWords}>Copy Từ vựng</Button>
+                  <Radio.Group value={viewStyle} onChange={(e) => setViewStyle(e.target.value)} buttonStyle="solid">
+                    <Radio.Button value="grid"><AppstoreOutlined /> Lưới</Radio.Button>
+                    <Radio.Button value="list"><UnorderedListOutlined /> Danh sách</Radio.Button>
+                  </Radio.Group>
+                </Space>
+              </div>
               <Form form={addForm} onFinish={handleAddWords}>
                 <Form.Item name="bulkInput" rules={[{ required: true, message: 'Please input words!' }]}>
                   <TextArea rows={4} placeholder={"word  meaning  note\nhello  xin chào  dùng để chào hỏi"} style={{fontSize: 16}} />
@@ -174,46 +209,15 @@ const VocabularyList = () => {
                     <List.Item
                       style={{
                         background: '#fff',
-                        marginBottom: 12,
-                        padding: '16px 24px',
-                        borderRadius: 8,
-                        border: isSelected ? '1px solid #1890ff' : '1px solid #d9d9d9'
+                        marginBottom: 4,
+                        padding: '8px 16px',
+                        borderRadius: 4,
+                        border: '1px solid #d9d9d9'
                       }}
-                      actions={actions}
                     >
-                      {isEditing ? (
-                        <Form form={editForm} onFinish={handleUpdateWord} layout="inline" style={{ width: '100%' }}>
-                          <Form.Item name="word" rules={[{ required: true }]} style={{ width: '30%' }}>
-                            <Input placeholder="Word" />
-                          </Form.Item>
-                          <Form.Item name="meaning" rules={[{ required: true }]} style={{ width: '30%' }}>
-                            <Input placeholder="Meaning" />
-                          </Form.Item>
-                          <Form.Item name="note" style={{ width: '30%' }}>
-                            <Input placeholder="Note" />
-                          </Form.Item>
-                        </Form>
-                      ) : (
-                        <List.Item.Meta
-                          title={
-                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                              <Title level={5} style={{ margin: 0 }}>{word.word}</Title>
-                              <Button 
-                                type="text" 
-                                icon={<SoundOutlined />} 
-                                onClick={() => handlePronounce(word.word)}
-                                style={{ marginLeft: 8 }}
-                              />
-                            </div>
-                          }
-                          description={
-                            <>
-                              <Text type="secondary" style={{ fontSize: 16 }}>{word.meaning}</Text>
-                              {word.note && <div><Text type="secondary" italic>{word.note}</Text></div>}
-                            </>
-                          }
-                        />
-                      )}
+                      <div style={{ width: '100%', fontSize: 16, userSelect: 'text' }}>
+                        {word.word}
+                      </div>
                     </List.Item>
                   );
                 }
@@ -286,24 +290,26 @@ const VocabularyList = () => {
             </Row>
             
             <Card style={{ marginBottom: 24 }}>
-              <Radio.Group value={mode} onChange={(e) => setMode(e.target.value)} buttonStyle="solid" size="large">
-                <Radio.Button value="view"><UnorderedListOutlined /> List</Radio.Button>
-                <Radio.Button value="learn"><ReadOutlined /> Learn</Radio.Button>
-                <Radio.Button value="flashcard"><CreditCardOutlined /> Flashcards</Radio.Button>
-                <Radio.Button value="retype"><RedoOutlined /> Retype</Radio.Button>
-              </Radio.Group>
+              <div style={{ overflowX: 'auto', whiteSpace: 'nowrap', paddingBottom: 8 }}>
+                <Radio.Group value={mode} onChange={(e) => setMode(e.target.value)} buttonStyle="solid" size="large">
+                  <Radio.Button value="view"><UnorderedListOutlined /> List</Radio.Button>
+                  <Radio.Button value="learn"><ReadOutlined /> Learn</Radio.Button>
+                  <Radio.Button value="flashcard"><CreditCardOutlined /> Flashcards</Radio.Button>
+                  <Radio.Button value="retype"><RedoOutlined /> Retype</Radio.Button>
+                </Radio.Group>
+              </div>
 
               {selectedWords.length > 0 && mode === 'view' && (
-                <Space style={{marginTop: 16}}>
+                <div style={{ marginTop: 16 }}>
                   <Button danger size="large" onClick={showDeleteConfirm} icon={<DeleteOutlined />}>
                     Delete ({selectedWords.length})
                   </Button>
-                </Space>
+                </div>
               )}
 
               {mode === 'learn' && (
                 <div style={{marginTop: 24}}>
-                    <Space>
+                    <Space wrap>
                         <Button type="primary" size="large" onClick={() => handleSelectLearnMode('typing')} disabled={words.length === 0} icon={<FormOutlined />}>
                             Input Mode
                         </Button>

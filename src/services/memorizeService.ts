@@ -42,7 +42,17 @@ export const getCards = (uid: string, deckId: string, callback: (cards: any[]) =
   });
 };
 
-export const addCard = (cardData: { numberKey: string; image: string; name: string; deckId: string; uid: string }) => {
+export const addCard = (cardData: { 
+  numberKey: string; 
+  image?: string; 
+  name?: string; 
+  personName?: string;
+  personImage?: string;
+  actionName?: string;
+  actionImage?: string;
+  deckId: string; 
+  uid: string;
+}) => {
   return addDoc(cardsCollectionRef, {
     ...cardData,
     level: 0, // SRS level
@@ -74,4 +84,20 @@ export const updateCard = (cardId: string, updatedData: any) => {
 export const deleteCard = (cardId: string) => {
   const cardDocRef = doc(db, 'memorizeCards', cardId);
   return deleteDoc(cardDocRef);
+};
+
+import { getDocs } from 'firebase/firestore';
+
+export const deleteDeck = async (deckId: string) => {
+  const deckDocRef = doc(db, 'memorizeDecks', deckId);
+  await deleteDoc(deckDocRef);
+
+  // Delete all cards associated with this deck
+  const q = query(cardsCollectionRef, where('deckId', '==', deckId));
+  const querySnapshot = await getDocs(q);
+  const batch = writeBatch(db);
+  querySnapshot.forEach((doc) => {
+    batch.delete(doc.ref);
+  });
+  return batch.commit();
 };

@@ -43,7 +43,7 @@ export const getVocabularyLists = (uid: string, callback: (lists: any[]) => void
 // Function to add a new vocabulary list
 export const addVocabularyList = (listData: { name: string; uid: string; date1?: Date }) => {
   const { name, uid, date1 } = listData;
-  let data: any = { name, uid };
+  let data: any = { name, uid, createdAt: new Date().toISOString() };
 
   if (date1) {
     data = { ...data, ...calculateReviewDates(date1) };

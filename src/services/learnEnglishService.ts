@@ -32,6 +32,7 @@ export const addWord = (wordData: { word: string; meaning: string; note?: string
     ...wordData,
     correctCount: 0,
     incorrectCount: 0,
+    createdAt: new Date().toISOString()
   });
 };
 

@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
-import { Tooltip, Drawer, Typography, Grid } from 'antd';
+import React from 'react';
+import { Tooltip, Typography, Grid } from 'antd';
 
-const { Text } = Typography;
 const { useBreakpoint } = Grid;
+
+export interface DisplayOptions {
+  person: boolean;
+  action: boolean;
+  object: boolean;
+}
 
 interface HeatmapProps {
   cards: any[];
   onCellClick?: (cell: any) => void;
+  displayOptions?: DisplayOptions;
 }
 
-const Heatmap: React.FC<HeatmapProps> = ({ cards, onCellClick }) => {
+const Heatmap: React.FC<HeatmapProps> = ({ cards, onCellClick, displayOptions = { object: true, person: false, action: false } }) => {
   const screens = useBreakpoint();
 
   // Generate 00-99 grid
@@ -32,6 +38,13 @@ const Heatmap: React.FC<HeatmapProps> = ({ cards, onCellClick }) => {
   };
 
   const renderCell = (cell: any) => {
+    const cellContents: string[] = [];
+    if (cell.card) {
+      if (displayOptions.person && cell.card.personName) cellContents.push(cell.card.personName);
+      if (displayOptions.action && cell.card.actionName) cellContents.push(cell.card.actionName);
+      if (displayOptions.object && cell.card.name) cellContents.push(cell.card.name);
+    }
+
     const content = (
       <div 
         key={cell.number}
@@ -39,17 +52,27 @@ const Heatmap: React.FC<HeatmapProps> = ({ cards, onCellClick }) => {
         style={{
           backgroundColor: cell.color,
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          fontWeight: 'bold',
           cursor: 'pointer',
           borderRadius: 4,
-          aspectRatio: '1/1',
-          fontSize: screens.md ? 14 : 10,
-          color: cell.color === '#f0f0f0' ? '#bfbfbf' : '#fff'
+          padding: '4px',
+          minHeight: screens.md ? '80px' : '40px',
+          fontSize: screens.md ? 12 : 10,
+          color: cell.color === '#f0f0f0' ? '#bfbfbf' : '#fff',
+          textAlign: 'center',
+          overflow: 'hidden',
+          wordBreak: 'break-word',
+          lineHeight: '1.2'
         }}
       >
-        {cell.number}
+        <div style={{ fontWeight: 'bold', fontSize: screens.md ? 16 : 12, marginBottom: cellContents.length > 0 ? 4 : 0 }}>
+          {cell.number}
+        </div>
+        {cellContents.map((txt, idx) => (
+          <div key={idx}>{txt}</div>
+        ))}
       </div>
     );
 
@@ -58,15 +81,53 @@ const Heatmap: React.FC<HeatmapProps> = ({ cards, onCellClick }) => {
         <Tooltip 
           key={cell.number} 
           title={
-            <div style={{ textAlign: 'center', padding: 4 }}>
-              {cell.card.image ? (
-                (cell.card.image.startsWith('http') || cell.card.image.startsWith('data:image/')) ? (
-                  <img src={cell.card.image} alt={cell.card.name} style={{ maxWidth: 150, maxHeight: 150, objectFit: 'contain', marginBottom: 8, borderRadius: 4 }} />
-                ) : (
-                  <div style={{ fontSize: 40 }}>{cell.card.image}</div>
-                )
-              ) : null}
-              <div style={{ fontWeight: 'bold' }}>{cell.number} - {cell.card.name}</div>
+            <div style={{ padding: 4 }}>
+              <div style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 8 }}>{cell.number}</div>
+              
+              {cell.card.personName && (
+                <div style={{ marginBottom: 8 }}>
+                  <strong>Người:</strong> {cell.card.personName}
+                  {cell.card.personImage && (
+                    <div style={{marginTop: 4}}>
+                      {(cell.card.personImage.startsWith('http') || cell.card.personImage.startsWith('data:image/')) ? (
+                        <img src={cell.card.personImage} alt={cell.card.personName} style={{ maxWidth: 100, maxHeight: 100, objectFit: 'contain', borderRadius: 4 }} />
+                      ) : (
+                        <div style={{ fontSize: 40 }}>{cell.card.personImage}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {cell.card.actionName && (
+                <div style={{ marginBottom: 8 }}>
+                  <strong>Hành động:</strong> {cell.card.actionName}
+                  {cell.card.actionImage && (
+                    <div style={{marginTop: 4}}>
+                      {(cell.card.actionImage.startsWith('http') || cell.card.actionImage.startsWith('data:image/')) ? (
+                        <img src={cell.card.actionImage} alt={cell.card.actionName} style={{ maxWidth: 100, maxHeight: 100, objectFit: 'contain', borderRadius: 4 }} />
+                      ) : (
+                        <div style={{ fontSize: 40 }}>{cell.card.actionImage}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {cell.card.name && (
+                <div style={{ marginBottom: 8 }}>
+                  <strong>Hình ảnh:</strong> {cell.card.name}
+                  {cell.card.image && (
+                    <div style={{marginTop: 4}}>
+                      {(cell.card.image.startsWith('http') || cell.card.image.startsWith('data:image/')) ? (
+                        <img src={cell.card.image} alt={cell.card.name} style={{ maxWidth: 100, maxHeight: 100, objectFit: 'contain', borderRadius: 4 }} />
+                      ) : (
+                        <div style={{ fontSize: 40 }}>{cell.card.image}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           }
           color="#fff" // White background for better image visibility
@@ -81,16 +142,16 @@ const Heatmap: React.FC<HeatmapProps> = ({ cards, onCellClick }) => {
   };
 
   return (
-    <>
+    <div style={{ width: '100%', overflowX: 'auto', paddingBottom: 8 }}>
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(10, 1fr)',
         gap: screens.md ? 4 : 2,
-        width: '100%'
+        minWidth: screens.md ? '100%' : '800px'
       }}>
         {grid.map(renderCell)}
       </div>
-    </>
+    </div>
   );
 };
 

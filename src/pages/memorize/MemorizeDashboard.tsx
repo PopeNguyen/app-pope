@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Row, Col, Card, Typography, Button, Space, Grid, Badge, Modal, Form, Input, List, Upload, message, Tabs } from 'antd';
-import { RocketOutlined, PlusOutlined, FireOutlined, InboxOutlined, PlayCircleOutlined, ThunderboltOutlined, BookOutlined, UploadOutlined } from '@ant-design/icons';
+import { Row, Col, Card, Typography, Button, Space, Grid, Badge, Modal, Form, Input, List, Upload, message, Tabs, Dropdown, Checkbox, Radio, Divider } from 'antd';
+import { RocketOutlined, PlusOutlined, FireOutlined, InboxOutlined, PlayCircleOutlined, ThunderboltOutlined, BookOutlined, UploadOutlined, DeleteOutlined, EllipsisOutlined, CopyOutlined } from '@ant-design/icons';
 import Heatmap from '@/components/memorize/Heatmap';
 import { useAuth } from '@/hooks/useAuth';
-import { getDecks, getCards, addDeck, addCard, updateCard, deleteCard } from '@/services/memorizeService';
+import { getDecks, getCards, addDeck, addCard, updateCard, deleteCard, deleteDeck } from '@/services/memorizeService';
 
 const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -17,7 +17,10 @@ const MemorizeDashboard = () => {
   const [selectedDeck, setSelectedDeck] = useState<string | null>(null);
   const [isAddCardModalOpen, setIsAddCardModalOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<any>(null);
+  const [selectedNumber, setSelectedNumber] = useState<string>('');
   const [uploading, setUploading] = useState(false);
+  const [bulkMode, setBulkMode] = useState<'person' | 'action' | 'object'>('object');
+  const [displayOptions, setDisplayOptions] = useState<{ person: boolean; action: boolean; object: boolean }>({ person: false, action: false, object: true });
   const [form] = Form.useForm();
   const [bulkForm] = Form.useForm();
 
@@ -25,14 +28,13 @@ const MemorizeDashboard = () => {
     if (user) {
       const unsub = getDecks(user.uid, (fetchedDecks) => {
         setDecks(fetchedDecks);
-        // Default to first deck if exists
         if (fetchedDecks.length > 0 && !selectedDeck) {
           setSelectedDeck(fetchedDecks[0].id);
         }
       });
       return () => unsub();
     }
-  }, [user]);
+  }, [user, selectedDeck]);
 
   useEffect(() => {
     if (user && selectedDeck) {
@@ -41,13 +43,35 @@ const MemorizeDashboard = () => {
     }
   }, [user, selectedDeck]);
 
+  // Use useEffect to reliably populate the form after the Modal is open
+  useEffect(() => {
+    if (isAddCardModalOpen) {
+      // setTimeout ensures the Form inside Modal/Tabs is fully mounted
+      const timer = setTimeout(() => {
+        if (editingCard) {
+          form.setFieldsValue({
+            numberKey: editingCard.numberKey,
+            name: editingCard.name,
+            personName: editingCard.personName,
+            actionName: editingCard.actionName,
+          });
+        } else {
+          form.resetFields();
+          form.setFieldsValue({
+            numberKey: selectedNumber,
+          });
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isAddCardModalOpen, editingCard, selectedNumber, form]);
+
   const handleKeyPress = useCallback((event: KeyboardEvent) => {
-    // Prevent trigger when typing in inputs
     if (['INPUT', 'TEXTAREA'].includes((event.target as HTMLElement).tagName)) return;
 
     switch(event.key.toLowerCase()) {
       case ' ':
-        event.preventDefault(); // Prevent scrolling
+        event.preventDefault();
         console.log('Bắt đầu ôn tập (Space)');
         break;
       case 'n':
@@ -100,7 +124,6 @@ const MemorizeDashboard = () => {
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
           
-          // Nén lại dưới định dạng webp hoặc jpeg với chất lượng 0.7 để giảm size
           const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
           resolve(dataUrl);
         };
@@ -111,52 +134,59 @@ const MemorizeDashboard = () => {
   };
 
   const handleCellClick = (cell: any) => {
+    setSelectedNumber(cell.number);
     if (cell.card) {
       setEditingCard(cell.card);
-      form.setFieldsValue({
-        numberKey: cell.card.numberKey,
-        name: cell.card.name,
-        // we can't easily prefill the Upload component with a base64 string, so leave it empty for new upload
-      });
-      setIsAddCardModalOpen(true);
     } else {
       setEditingCard(null);
-      form.resetFields();
-      form.setFieldsValue({
-        numberKey: cell.number,
-      });
-      setIsAddCardModalOpen(true);
     }
+    setIsAddCardModalOpen(true);
   };
 
   const openAddModal = () => {
     setEditingCard(null);
-    form.resetFields();
+    setSelectedNumber('');
     setIsAddCardModalOpen(true);
   };
 
   const handleAddOrEditCard = async (values: any) => {
+    if (!selectedDeck) {
+      message.error('Bạn cần chọn hoặc tạo một Bộ thẻ (Deck) trước khi lưu thẻ!');
+      return;
+    }
     if (user && selectedDeck) {
       try {
         setUploading(true);
         let imageUrl = editingCard ? editingCard.image : '';
+        let personImageUrl = editingCard ? editingCard.personImage : '';
+        let actionImageUrl = editingCard ? editingCard.actionImage : '';
+
         if (values.image && values.image.length > 0) {
-          const file = values.image[0].originFileObj;
-          imageUrl = await getBase64AndCompress(file);
+          imageUrl = await getBase64AndCompress(values.image[0].originFileObj);
+        }
+        if (values.personImage && values.personImage.length > 0) {
+          personImageUrl = await getBase64AndCompress(values.personImage[0].originFileObj);
+        }
+        if (values.actionImage && values.actionImage.length > 0) {
+          actionImageUrl = await getBase64AndCompress(values.actionImage[0].originFileObj);
         }
 
+        const data = {
+          numberKey: values.numberKey,
+          name: values.name || '',
+          image: imageUrl || '',
+          personName: values.personName || '',
+          personImage: personImageUrl || '',
+          actionName: values.actionName || '',
+          actionImage: actionImageUrl || '',
+        };
+
         if (editingCard) {
-          await updateCard(editingCard.id, {
-            numberKey: values.numberKey,
-            name: values.name,
-            image: imageUrl,
-          });
+          await updateCard(editingCard.id, data);
           message.success('Cập nhật thẻ thành công!');
         } else {
           await addCard({
-            numberKey: values.numberKey,
-            name: values.name,
-            image: imageUrl,
+            ...data,
             deckId: selectedDeck,
             uid: user.uid
           });
@@ -177,25 +207,25 @@ const MemorizeDashboard = () => {
 
   const handleDeleteCard = async () => {
     if (editingCard) {
-      Modal.confirm({
-        title: 'Xác nhận xóa',
-        content: `Bạn có chắc chắn muốn xóa thẻ ${editingCard.numberKey} - ${editingCard.name}?`,
-        onOk: async () => {
-          try {
-            await deleteCard(editingCard.id);
-            message.success('Xóa thẻ thành công!');
-            setIsAddCardModalOpen(false);
-            setEditingCard(null);
-            form.resetFields();
-          } catch (e) {
-            message.error('Xóa thất bại.');
-          }
+      if (window.confirm(`Bạn có chắc chắn muốn xóa thẻ ${editingCard.numberKey} - ${editingCard.name}?`)) {
+        try {
+          await deleteCard(editingCard.id);
+          message.success('Xóa thẻ thành công!');
+          setIsAddCardModalOpen(false);
+          setEditingCard(null);
+          form.resetFields();
+        } catch (e) {
+          message.error('Xóa thất bại.');
         }
-      });
+      }
     }
   };
 
   const handleBulkAdd = async (values: any) => {
+    if (!selectedDeck) {
+      message.error('Bạn cần chọn hoặc tạo một Bộ thẻ (Deck) trước khi lưu thẻ!');
+      return;
+    }
     if (user && selectedDeck && values.bulkInput) {
       setUploading(true);
       try {
@@ -208,13 +238,30 @@ const MemorizeDashboard = () => {
             const image = parts[2]?.trim() || '';
 
             if (numberKey !== '' && name !== '') {
-              await addCard({
-                numberKey,
-                name,
-                image,
-                deckId: selectedDeck,
-                uid: user.uid
-              });
+              const existingCard = cards.find(c => c.numberKey === numberKey && c.deckId === selectedDeck);
+              const mergeData: any = {};
+              
+              if (bulkMode === 'person') {
+                mergeData.personName = name;
+                if (image) mergeData.personImage = image;
+              } else if (bulkMode === 'action') {
+                mergeData.actionName = name;
+                if (image) mergeData.actionImage = image;
+              } else {
+                mergeData.name = name;
+                if (image) mergeData.image = image;
+              }
+
+              if (existingCard) {
+                await updateCard(existingCard.id, mergeData);
+              } else {
+                await addCard({
+                  numberKey,
+                  deckId: selectedDeck,
+                  uid: user.uid,
+                  ...mergeData
+                });
+              }
             }
           }
         }
@@ -230,6 +277,52 @@ const MemorizeDashboard = () => {
     }
   };
 
+  const handleDeleteDeck = async (deckId: string, deckName: string) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn bộ thẻ "${deckName}" và tất cả các thẻ bên trong không?`)) {
+      try {
+        await deleteDeck(deckId);
+        message.success('Đã xóa bộ thẻ!');
+        if (selectedDeck === deckId) {
+          setSelectedDeck(null);
+          setCards([]);
+        }
+      } catch (error) {
+        message.error('Không thể xóa bộ thẻ.');
+      }
+    }
+  };
+
+  const handleCopyData = () => {
+    if (cards.length === 0) {
+      message.warning('Chưa có dữ liệu nào để sao chép!');
+      return;
+    }
+
+    const lines: string[] = [];
+    for (let i = 0; i < 100; i++) {
+      const numStr = i.toString().padStart(2, '0');
+      const card = cards.find(c => c.numberKey === numStr);
+      if (card) {
+        const rowData = [numStr];
+        if (displayOptions.person) rowData.push(card.personName || '');
+        if (displayOptions.action) rowData.push(card.actionName || '');
+        if (displayOptions.object) rowData.push(card.name || '');
+        lines.push(rowData.join('\t'));
+      }
+    }
+
+    if (lines.length === 0) {
+      message.warning('Dữ liệu đang hiển thị trống!');
+      return;
+    }
+
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+      message.success('Đã sao chép dữ liệu vào khay nhớ tạm!');
+    }).catch(() => {
+      message.error('Không thể sao chép, vui lòng thử lại.');
+    });
+  };
+
   // Mock data for UI
   const streak = 12;
   const srsCount = 25;
@@ -243,54 +336,46 @@ const MemorizeDashboard = () => {
 
   return (
     <div style={{ margin: '0 auto' }}>
-      {/* Header Stats */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} md={12}>
-          <Card bodyStyle={{ padding: '16px 24px', display: 'flex', alignItems: 'center', background: 'linear-gradient(90deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)' }}>
-            <FireOutlined style={{ fontSize: 24, color: '#ff4d4f', marginRight: 12 }} />
-            <Title level={4} style={{ margin: 0 }}>{streak} Ngày Streak</Title>
-          </Card>
-        </Col>
-        <Col xs={24} md={12}>
-          <Card bodyStyle={{ padding: '16px 24px', display: 'flex', alignItems: 'center', background: 'linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%)' }}>
-            <InboxOutlined style={{ fontSize: 24, color: '#1890ff', marginRight: 12 }} />
-            <Title level={4} style={{ margin: 0 }}>{srsCount} Thẻ cần ôn hôm nay</Title>
-          </Card>
-        </Col>
-      </Row>
-
       <Row gutter={[24, 24]}>
-        {/* Actions - Mobile puts this first */}
-        <Col xs={24} md={10} order={screens.md ? 1 : 1}>
-          <Card title={<><RocketOutlined /> Hành động nhanh</>} style={{ height: '100%' }}>
-            <Button 
-              type="primary" 
-              size="large" 
-              block 
-              style={{ height: 80, fontSize: 20, marginBottom: 16, fontWeight: 'bold' }}
-              icon={<PlayCircleOutlined />}
-            >
-              BẮT ĐẦU ÔN TẬP (Space)
-            </Button>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Button size="large" block icon={<BookOutlined />}>
-                  Học mới (N)
-                </Button>
-              </Col>
-              <Col span={12}>
-                <Button size="large" block icon={<ThunderboltOutlined />}>
-                  Phản xạ (S)
-                </Button>
-              </Col>
-            </Row>
-          </Card>
-        </Col>
-
         {/* Heatmap */}
-        <Col xs={24} md={14} order={screens.md ? 2 : 2}>
-          <Card title="Bản đồ nhiệt (00-99)" style={{ height: '100%' }}>
-            <Heatmap cards={cards} onCellClick={handleCellClick} />
+        <Col xs={24}>
+          <Card 
+            title="Bản đồ nhiệt (00-99)" 
+            style={{ height: '100%' }}
+            extra={
+              <Space>
+                <Button 
+                  icon={<CopyOutlined />} 
+                  onClick={handleCopyData}
+                  title="Sao chép dữ liệu đang hiển thị"
+                >
+                  Sao chép
+                </Button>
+                <Dropdown 
+                  menu={{ 
+                    items: [
+                      {
+                        key: 'person',
+                        label: <Checkbox checked={displayOptions.person} onChange={(e) => setDisplayOptions(prev => ({...prev, person: e.target.checked}))}>Người</Checkbox>
+                      },
+                      {
+                        key: 'action',
+                        label: <Checkbox checked={displayOptions.action} onChange={(e) => setDisplayOptions(prev => ({...prev, action: e.target.checked}))}>Hành động</Checkbox>
+                      },
+                      {
+                        key: 'object',
+                        label: <Checkbox checked={displayOptions.object} onChange={(e) => setDisplayOptions(prev => ({...prev, object: e.target.checked}))}>Hình ảnh</Checkbox>
+                      }
+                    ]
+                  }} 
+                  trigger={['click']}
+                >
+                  <Button type="text" icon={<EllipsisOutlined style={{ fontSize: 20 }} />} />
+                </Dropdown>
+              </Space>
+            }
+          >
+            <Heatmap cards={cards} onCellClick={handleCellClick} displayOptions={displayOptions} />
             <div style={{ marginTop: 16, textAlign: 'center', fontSize: 12, color: '#888' }}>
               (Nhấp vào ô bất kỳ để Sửa/Thêm)
             </div>
@@ -324,6 +409,19 @@ const MemorizeDashboard = () => {
                       hoverable 
                       onClick={() => setSelectedDeck(item.id)}
                       style={{ border: selectedDeck === item.id ? '2px solid #1890ff' : undefined }}
+                      actions={[
+                        <Button 
+                          type="text" 
+                          danger 
+                          icon={<DeleteOutlined />} 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteDeck(item.id, item.name);
+                          }}
+                        >
+                          Xóa
+                        </Button>
+                      ]}
                     >
                       <Card.Meta title={item.name} description={item.description} />
                     </Card>
@@ -344,62 +442,110 @@ const MemorizeDashboard = () => {
           form.resetFields();
         }}
         footer={null}
-        destroyOnClose
+        forceRender
       >
-        <Tabs defaultActiveKey="1">
-          <Tabs.TabPane tab={editingCard ? "Sửa thẻ" : "Thêm từng thẻ"} key="1">
-            <Form form={form} layout="vertical" onFinish={handleAddOrEditCard}>
-              <Form.Item name="numberKey" label="Số (00-99)" rules={[{ required: true }]}>
-                <Input placeholder="Ví dụ: 00" disabled={!!editingCard} />
-              </Form.Item>
-              <Form.Item name="name" label="Tên hình ảnh" rules={[{ required: true }]}>
-                <Input placeholder="Ví dụ: Quả trứng" />
-              </Form.Item>
-              <Form.Item 
-                name="image" 
-                label={editingCard ? "Tải ảnh mới lên (để trống nếu giữ nguyên)" : "Tải ảnh lên"} 
-                valuePropName="fileList" 
-                getValueFromEvent={normFile}
-              >
-                <Upload beforeUpload={() => false} maxCount={1} listType="picture">
-                  <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
-                </Upload>
-              </Form.Item>
-              <Form.Item>
-                <Row gutter={16}>
-                  <Col span={editingCard ? 12 : 24}>
-                    <Button type="primary" htmlType="submit" block loading={uploading}>
-                      {editingCard ? "Cập nhật" : "Lưu thẻ"}
-                    </Button>
-                  </Col>
-                  {editingCard && (
-                    <Col span={12}>
-                      <Button danger block onClick={handleDeleteCard}>
-                        Xóa thẻ này
-                      </Button>
-                    </Col>
-                  )}
-                </Row>
-              </Form.Item>
-            </Form>
-          </Tabs.TabPane>
-          {!editingCard && (
-            <Tabs.TabPane tab="Thêm hàng loạt (Excel)" key="2">
-            <Typography.Paragraph type="secondary">
-              Copy dữ liệu từ Excel (mỗi cột là một thuộc tính) và dán vào đây.<br/>
-              Thứ tự cột: <strong>Số</strong> (Tab) <strong>Tên hình ảnh</strong> (Tab) <strong>Icon/Emoji (tùy chọn)</strong>
-            </Typography.Paragraph>
-            <Form form={bulkForm} layout="vertical" onFinish={handleBulkAdd}>
-              <Form.Item name="bulkInput" rules={[{ required: true, message: 'Vui lòng nhập dữ liệu!' }]}>
-                <Input.TextArea rows={8} placeholder={"00\tQuả trứng\t🥚\n01\tKhăn mặt\t🧻"} />
-              </Form.Item>
-              <Form.Item>
-                <Button type="primary" htmlType="submit" block loading={uploading}>Lưu tất cả thẻ</Button>
-              </Form.Item>
-            </Form>
-          </Tabs.TabPane>
-          )}
-        </Tabs>
+        <Tabs 
+          defaultActiveKey="1"
+          items={[
+            {
+              key: "1",
+              label: editingCard ? "Sửa thẻ" : "Thêm từng thẻ",
+              children: (
+                <Form form={form} layout="vertical" onFinish={handleAddOrEditCard}>
+                  <Form.Item name="numberKey" label="Số (00-99)" rules={[{ required: true, message: 'Vui lòng nhập số' }]}>
+                    <Input placeholder="Ví dụ: 00" disabled={!!editingCard} />
+                  </Form.Item>
+                  <Divider orientation="left">Người</Divider>
+                  <Form.Item name="personName">
+                    <Input placeholder="Ví dụ: Einstein" />
+                  </Form.Item>
+                  <Form.Item 
+                    name="personImage" 
+                    valuePropName="fileList" 
+                    getValueFromEvent={normFile}
+                  >
+                    <Upload beforeUpload={() => false} maxCount={1} listType="picture">
+                      <Button icon={<UploadOutlined />}>Tải ảnh người lên</Button>
+                    </Upload>
+                  </Form.Item>
+
+                  <Divider orientation="left">Hành động</Divider>
+                  <Form.Item name="actionName">
+                    <Input placeholder="Ví dụ: Viết bảng" />
+                  </Form.Item>
+                  <Form.Item 
+                    name="actionImage" 
+                    valuePropName="fileList" 
+                    getValueFromEvent={normFile}
+                  >
+                    <Upload beforeUpload={() => false} maxCount={1} listType="picture">
+                      <Button icon={<UploadOutlined />}>Tải ảnh hành động lên</Button>
+                    </Upload>
+                  </Form.Item>
+
+                  <Divider orientation="left">Hình ảnh (Vật)</Divider>
+                  <Form.Item name="name">
+                    <Input placeholder="Ví dụ: Quả trứng" />
+                  </Form.Item>
+                  <Form.Item 
+                    name="image" 
+                    valuePropName="fileList" 
+                    getValueFromEvent={normFile}
+                  >
+                    <Upload beforeUpload={() => false} maxCount={1} listType="picture">
+                      <Button icon={<UploadOutlined />}>Tải ảnh vật lên</Button>
+                    </Upload>
+                  </Form.Item>
+                  <Form.Item>
+                    <Row gutter={16}>
+                      <Col span={editingCard ? 12 : 24}>
+                        <Button type="primary" htmlType="submit" block loading={uploading}>
+                          {editingCard ? "Cập nhật" : "Lưu thẻ"}
+                        </Button>
+                      </Col>
+                      {editingCard && (
+                        <Col span={12}>
+                          <Button danger block htmlType="button" onClick={(e) => { e.preventDefault(); handleDeleteCard(); }}>
+                            Xóa thẻ này
+                          </Button>
+                        </Col>
+                      )}
+                    </Row>
+                  </Form.Item>
+                </Form>
+              )
+            },
+            !editingCard ? {
+              key: "2",
+              label: "Thêm hàng loạt (Excel)",
+              children: (
+                <>
+                  <Typography.Paragraph type="secondary">
+                    Chọn loại dữ liệu bạn muốn dán vào:
+                  </Typography.Paragraph>
+                  <div style={{ marginBottom: 16 }}>
+                    <Radio.Group value={bulkMode} onChange={e => setBulkMode(e.target.value)} buttonStyle="solid">
+                      <Radio.Button value="person">Người</Radio.Button>
+                      <Radio.Button value="action">Hành động</Radio.Button>
+                      <Radio.Button value="object">Hình ảnh</Radio.Button>
+                    </Radio.Group>
+                  </div>
+                  <Typography.Paragraph type="secondary">
+                    Thứ tự cột: <strong>Số</strong> (Tab) <strong>Tên {bulkMode === 'person' ? 'Người' : bulkMode === 'action' ? 'Hành động' : 'Hình ảnh'}</strong> (Tab) <strong>Link URL Ảnh (tùy chọn)</strong>
+                  </Typography.Paragraph>
+                  <Form form={bulkForm} layout="vertical" onFinish={handleBulkAdd}>
+                    <Form.Item name="bulkInput" rules={[{ required: true, message: 'Vui lòng nhập dữ liệu!' }]}>
+                      <Input.TextArea rows={8} placeholder={"00\tQuả trứng\t🥚\n01\tKhăn mặt\t🧻"} />
+                    </Form.Item>
+                    <Form.Item>
+                      <Button type="primary" htmlType="submit" block loading={uploading}>Lưu tất cả thẻ</Button>
+                    </Form.Item>
+                  </Form>
+                </>
+              )
+            } : null
+          ].filter(Boolean) as any}
+        />
       </Modal>
     </div>
   );

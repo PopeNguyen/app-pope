@@ -20,7 +20,10 @@ const LearnEnglish = () => {
     if (user) {
       setLoading(true);
       const unsubscribe = getVocabularyLists(user.uid, (fetchedLists) => {
-        setLists(fetchedLists);
+        const sortedLists = [...fetchedLists].sort((a, b) => 
+          (b.createdAt || '').localeCompare(a.createdAt || '')
+        );
+        setLists(sortedLists);
         setLoading(false);
       });
       return () => unsubscribe();
